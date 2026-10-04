@@ -1,0 +1,9 @@
+.env
+.env.*
+.git
+.next
+node_modules
+prisma/db.sqlite
+prisma/db.sqlite-journal
+tailscale-state
+npm-debug.log*
