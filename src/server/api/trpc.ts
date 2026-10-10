@@ -6,11 +6,13 @@
  * TL;DR - This is where all the tRPC server stuff is created and plugged in. The pieces you will
  * need to use are documented accordingly near the end.
  */
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { db } from "~/server/db";
+import { getSession, isSameOrigin } from "~/server/auth/session";
+import { env } from "~/env";
 
 /**
  * 1. CONTEXT
@@ -27,6 +29,7 @@ import { db } from "~/server/db";
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   return {
     db,
+    session: await getSession(opts.headers),
     ...opts,
   };
 };
@@ -96,11 +99,11 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   return result;
 });
 
-/**
- * Public (unauthenticated) procedure
- *
- * This is the base piece you use to build new queries and mutations on your tRPC API. It does not
- * guarantee that a user querying is authorized, but you can still access user session data if they
- * are logged in.
- */
-export const publicProcedure = t.procedure.use(timingMiddleware);
+// Data access is protected even when called directly from server components.
+export const protectedProcedure = t.procedure.use(async ({ ctx, type, next }) => {
+  if (!ctx.session) throw new TRPCError({ code: "UNAUTHORIZED", message: "Your session has ended. Sign in again to continue." });
+  if (type === "mutation" && !isSameOrigin(ctx.headers)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: `Saving changes is not allowed from this address. Open ${env.APP_URL} and try again.` });
+  }
+  return next({ ctx: { ...ctx, session: ctx.session } });
+}).use(timingMiddleware);

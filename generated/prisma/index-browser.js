@@ -136,6 +136,26 @@ exports.Prisma.GiftCardScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.UserScalarFieldEnum = {
+  id: 'id',
+  username: 'username',
+  passwordHash: 'passwordHash',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.SessionScalarFieldEnum = {
+  tokenHash: 'tokenHash',
+  userId: 'userId',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.LoginThrottleScalarFieldEnum = {
+  id: 'id',
+  attempts: 'attempts',
+  resetAt: 'resetAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -149,7 +169,10 @@ exports.Prisma.NullsOrder = {
 
 exports.Prisma.ModelName = {
   Category: 'Category',
-  GiftCard: 'GiftCard'
+  GiftCard: 'GiftCard',
+  User: 'User',
+  Session: 'Session',
+  LoginThrottle: 'LoginThrottle'
 };
 
 /**

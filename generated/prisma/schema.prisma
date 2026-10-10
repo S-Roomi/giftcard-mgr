@@ -32,3 +32,29 @@ model GiftCard {
 
   @@index([categoryId])
 }
+
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique
+  passwordHash String
+  sessions     Session[]
+  createdAt    DateTime  @default(now())
+}
+
+model Session {
+  tokenHash String   @id
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@index([userId])
+}
+
+// One persistent login throttle shared across instances; independent of proxy headers.
+model LoginThrottle {
+  id       Int      @id
+  attempts Int
+  resetAt  DateTime
+}

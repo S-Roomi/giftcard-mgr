@@ -8,6 +8,12 @@ export const env = createEnv({
    */
   server: {
     DATABASE_URL: z.string().url(),
+    APP_URL: z.string().url().refine((value) => {
+      const url = new URL(value);
+      return ["http:", "https:"].includes(url.protocol) &&
+        url.pathname === "/" && !url.search && !url.hash && !url.username && !url.password;
+    }, "APP_URL must be the site's HTTP or HTTPS origin")
+      .default("http://localhost:3000"),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -28,6 +34,7 @@ export const env = createEnv({
    */
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
+    APP_URL: process.env.APP_URL,
     NODE_ENV: process.env.NODE_ENV,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },

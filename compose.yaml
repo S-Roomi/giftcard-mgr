@@ -3,12 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    # The app has no network namespace or published port of its own. Tailscale
-    # Serve reaches it over the loopback interface shared with the sidecar.
     environment:
       DATABASE_URL: file:../app/db.sqlite
+      APP_URL: ${APP_URL:?Set APP_URL to the address used in your browser}
     ports:
-      - "127.0.0.1:3000:3000"
+      - "6565:3000"
     volumes:
       - giftcard-data:/app/data
     restart: unless-stopped

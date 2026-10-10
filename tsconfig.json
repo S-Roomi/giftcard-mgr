@@ -36,7 +36,9 @@
     "**/*.tsx",
     "**/*.cjs",
     "**/*.js",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    ".next-auth-test/types/**/*.ts",
+    ".next-auth-build/types/**/*.ts"
   ],
   "exclude": ["node_modules", "generated"]
 }

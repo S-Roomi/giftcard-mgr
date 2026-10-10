@@ -108,6 +108,26 @@ exports.Prisma.GiftCardScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.UserScalarFieldEnum = {
+  id: 'id',
+  username: 'username',
+  passwordHash: 'passwordHash',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.SessionScalarFieldEnum = {
+  tokenHash: 'tokenHash',
+  userId: 'userId',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.LoginThrottleScalarFieldEnum = {
+  id: 'id',
+  attempts: 'attempts',
+  resetAt: 'resetAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -121,7 +141,10 @@ exports.Prisma.NullsOrder = {
 
 exports.Prisma.ModelName = {
   Category: 'Category',
-  GiftCard: 'GiftCard'
+  GiftCard: 'GiftCard',
+  User: 'User',
+  Session: 'Session',
+  LoginThrottle: 'LoginThrottle'
 };
 /**
  * Create the Client
@@ -134,7 +157,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/home/sin/projects/giftcard_mgr/generated/prisma",
+      "value": "/Users/sinaroomi/Code/projects/giftcard-mgr/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -143,12 +166,12 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "debian-openssl-3.0.x",
+        "value": "darwin-arm64",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/home/sin/projects/giftcard_mgr/prisma/schema.prisma",
+    "sourceFilePath": "/Users/sinaroomi/Code/projects/giftcard-mgr/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -170,13 +193,13 @@ const config = {
       }
     }
   },
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../generated/prisma\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Category {\n  id        Int        @id @default(autoincrement())\n  name      String     @unique\n  createdAt DateTime   @default(now())\n  giftCards GiftCard[]\n}\n\nmodel GiftCard {\n  id         Int       @id @default(autoincrement())\n  code       String\n  pin        String?\n  balance    Float\n  expiresAt  DateTime?\n  notes      String?\n  categoryId Int\n  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)\n  createdAt  DateTime  @default(now())\n  updatedAt  DateTime  @updatedAt\n\n  @@index([categoryId])\n}\n",
-  "inlineSchemaHash": "c01cd4c93951476314899be1c6fb1575c9ab82b2e4b0ec522926df51b9707182",
+  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../generated/prisma\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Category {\n  id        Int        @id @default(autoincrement())\n  name      String     @unique\n  createdAt DateTime   @default(now())\n  giftCards GiftCard[]\n}\n\nmodel GiftCard {\n  id         Int       @id @default(autoincrement())\n  code       String\n  pin        String?\n  balance    Float\n  expiresAt  DateTime?\n  notes      String?\n  categoryId Int\n  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)\n  createdAt  DateTime  @default(now())\n  updatedAt  DateTime  @updatedAt\n\n  @@index([categoryId])\n}\n\nmodel User {\n  id           Int       @id @default(autoincrement())\n  username     String    @unique\n  passwordHash String\n  sessions     Session[]\n  createdAt    DateTime  @default(now())\n}\n\nmodel Session {\n  tokenHash String   @id\n  userId    Int\n  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)\n  expiresAt DateTime\n  createdAt DateTime @default(now())\n\n  @@index([expiresAt])\n  @@index([userId])\n}\n\n// One persistent login throttle shared across instances; independent of proxy headers.\nmodel LoginThrottle {\n  id       Int      @id\n  attempts Int\n  resetAt  DateTime\n}\n",
+  "inlineSchemaHash": "693389e4779e5e9d5bcbc5d249b50e8a450b2e104127eb3d732c84696a3d6204",
   "copyEngine": true
 }
 config.dirname = '/'
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"Category\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"giftCards\",\"kind\":\"object\",\"type\":\"GiftCard\",\"relationName\":\"CategoryToGiftCard\"}],\"dbName\":null},\"GiftCard\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"code\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"pin\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"balance\",\"kind\":\"scalar\",\"type\":\"Float\"},{\"name\":\"expiresAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"notes\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"categoryId\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"category\",\"kind\":\"object\",\"type\":\"Category\",\"relationName\":\"CategoryToGiftCard\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"Category\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"giftCards\",\"kind\":\"object\",\"type\":\"GiftCard\",\"relationName\":\"CategoryToGiftCard\"}],\"dbName\":null},\"GiftCard\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"code\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"pin\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"balance\",\"kind\":\"scalar\",\"type\":\"Float\"},{\"name\":\"expiresAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"notes\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"categoryId\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"category\",\"kind\":\"object\",\"type\":\"Category\",\"relationName\":\"CategoryToGiftCard\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"User\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"username\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"passwordHash\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sessions\",\"kind\":\"object\",\"type\":\"Session\",\"relationName\":\"SessionToUser\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Session\":{\"fields\":[{\"name\":\"tokenHash\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"user\",\"kind\":\"object\",\"type\":\"User\",\"relationName\":\"SessionToUser\"},{\"name\":\"expiresAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"LoginThrottle\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"attempts\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"resetAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
 config.engineWasm = {
   getRuntime: async () => require('./query_engine_bg.js'),

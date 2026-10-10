@@ -5,6 +5,9 @@
 import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const config = {
+  // Integration tests use their own build directory alongside an active dev server.
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
+};
 
 export default config;

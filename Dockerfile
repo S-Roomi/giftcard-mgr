@@ -28,6 +28,8 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/generated ./generated
+COPY --from=build /app/scripts ./scripts
+COPY --from=build /app/src/server/auth/password.mjs ./src/server/auth/password.mjs
 COPY docker/start.sh /usr/local/bin/start-giftcard-mgr
 
 RUN chmod +x /usr/local/bin/start-giftcard-mgr

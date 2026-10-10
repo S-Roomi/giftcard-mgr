@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 export const categoryRouter = createTRPCRouter({
-  getAll: publicProcedure.query(async ({ ctx }) => {
+  getAll: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.category.findMany({
       orderBy: { name: "asc" },
       include: {
@@ -14,7 +14,7 @@ export const categoryRouter = createTRPCRouter({
     });
   }),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(z.object({ name: z.string().trim().min(1).max(100) }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.category.create({
@@ -22,7 +22,7 @@ export const categoryRouter = createTRPCRouter({
       });
     }),
 
-  rename: publicProcedure
+  rename: protectedProcedure
     .input(
       z.object({ id: z.number().int(), name: z.string().trim().min(1).max(100) }),
     )
@@ -33,7 +33,7 @@ export const categoryRouter = createTRPCRouter({
       });
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.category.delete({

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 const giftCardFields = {
   code: z.string().trim().min(1).max(200),
@@ -12,7 +12,7 @@ const giftCardFields = {
 };
 
 export const giftCardRouter = createTRPCRouter({
-  create: publicProcedure
+  create: protectedProcedure
     .input(z.object(giftCardFields))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.giftCard.create({
@@ -25,7 +25,7 @@ export const giftCardRouter = createTRPCRouter({
       });
     }),
 
-  update: publicProcedure
+  update: protectedProcedure
     .input(z.object({ id: z.number().int(), ...giftCardFields }))
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
@@ -40,7 +40,7 @@ export const giftCardRouter = createTRPCRouter({
       });
     }),
 
-  deduct: publicProcedure
+  deduct: protectedProcedure
     .input(z.object({ id: z.number().int(), amount: z.number().positive() }))
     .mutation(async ({ ctx, input }) => {
       const card = await ctx.db.giftCard.findUniqueOrThrow({
@@ -56,7 +56,7 @@ export const giftCardRouter = createTRPCRouter({
       });
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.giftCard.delete({
