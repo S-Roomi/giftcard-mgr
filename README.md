@@ -13,7 +13,11 @@ use the same dialog, including moving cards between categories. Deleting a
 category asks for confirmation and removes all of its cards; deleting an
 individual card also requires confirmation. Spending plans still live on each
 category. Mobile uses centered cards; larger screens use a two- or three-column
-grid. The former `/manage` address redirects to the homepage after sign-in.
+grid. Each category has its own **Sort by** control, which sets both its displayed
+card order and the order used for spending plans. Choices are remembered separately
+per category in the current browser, even after renaming a category. Categories
+without a saved choice default to soonest expiry; the former global sort preference
+is no longer used. The former `/manage` address redirects to the homepage after sign-in.
 
 ## Development
 
