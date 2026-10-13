@@ -157,7 +157,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/sinaroomi/Code/projects/giftcard-mgr/generated/prisma",
+      "value": "/home/sin/projects/giftcard_mgr/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -166,12 +166,12 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "darwin-arm64",
+        "value": "debian-openssl-3.0.x",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/Users/sinaroomi/Code/projects/giftcard-mgr/prisma/schema.prisma",
+    "sourceFilePath": "/home/sin/projects/giftcard_mgr/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
