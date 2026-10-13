@@ -19,7 +19,7 @@ const SORT_OPTIONS = {
 
 type SortKey = keyof typeof SORT_OPTIONS;
 
-const SORT_STORAGE_KEY = "giftcard-use-sort";
+const SORT_STORAGE_PREFIX = "giftcard-category-sort";
 
 function sortCards(cards: GiftCard[], sort: SortKey): GiftCard[] {
   const sorted = [...cards];
@@ -50,22 +50,11 @@ const roundCents = (n: number) => Math.round(n * 100) / 100;
 
 export function UsePage() {
   const [categories] = api.category.getAll.useSuspenseQuery();
-  const [sort, setSort] = useState<SortKey>("expiry-soonest");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [modal, setModal] = useState<{
     card: GiftCard | null;
     categoryId: number;
   } | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem(SORT_STORAGE_KEY);
-    if (saved && saved in SORT_OPTIONS) setSort(saved as SortKey);
-  }, []);
-
-  const changeSort = (value: SortKey) => {
-    setSort(value);
-    localStorage.setItem(SORT_STORAGE_KEY, value);
-  };
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 md:py-10 lg:px-8">
@@ -75,20 +64,6 @@ export function UsePage() {
         </div>
 
         <div className="flex w-full flex-wrap items-center justify-center gap-3 md:w-auto md:justify-end">
-          <label className="flex items-center gap-2 text-sm text-subtle">
-            Sort by
-            <select
-              value={sort}
-              onChange={(e) => changeSort(e.target.value as SortKey)}
-              className="min-h-11 rounded-md border border-edge-strong bg-surface px-3 py-2 text-sm text-foreground focus:border-primary-hover focus:outline-none"
-            >
-              {Object.entries(SORT_OPTIONS).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
           <button
             onClick={() => setCreatingCategory((value) => !value)}
             aria-expanded={creatingCategory}
@@ -128,7 +103,6 @@ export function UsePage() {
               <CategoryPlanner
                 key={category.id}
                 category={category}
-                sort={sort}
                 onAddCard={() => setModal({ card: null, categoryId: category.id })}
                 onEditCard={(card) => setModal({ card, categoryId: category.id })}
               />
@@ -150,16 +124,40 @@ export function UsePage() {
 
 function CategoryPlanner({
   category,
-  sort,
   onAddCard,
   onEditCard,
 }: {
   category: Category;
-  sort: SortKey;
   onAddCard: () => void;
   onEditCard: (card: GiftCard) => void;
 }) {
   const utils = api.useUtils();
+  const [sort, setSort] = useState<SortKey>("expiry-soonest");
+  const sortStorageKey = `${SORT_STORAGE_PREFIX}:${category.id}`;
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(sortStorageKey);
+      setSort(
+        saved && Object.prototype.hasOwnProperty.call(SORT_OPTIONS, saved)
+          ? (saved as SortKey)
+          : "expiry-soonest",
+      );
+    } catch {
+      // Sorting remains usable when browser storage is unavailable.
+      setSort("expiry-soonest");
+    }
+  }, [sortStorageKey]);
+
+  const changeSort = (value: SortKey) => {
+    setSort(value);
+    try {
+      localStorage.setItem(sortStorageKey, value);
+    } catch {
+      // Keep the selection for this visit even if it cannot be persisted.
+    }
+  };
+
   const [amountStr, setAmountStr] = useState("");
   const [isSpending, setIsSpending] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -275,6 +273,22 @@ function CategoryPlanner({
 
       {showAll && (
         <div className="flex flex-col gap-3">
+          <label className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-subtle">
+            Sort by
+            <select
+              aria-label={`Sort cards in ${category.name}`}
+              value={sort}
+              disabled={busy}
+              onChange={(event) => changeSort(event.target.value as SortKey)}
+              className="min-h-11 min-w-0 flex-1 rounded-md border border-edge-strong bg-surface px-3 py-2 text-sm text-foreground focus:border-primary-hover focus:outline-none disabled:opacity-50"
+            >
+              {Object.entries(SORT_OPTIONS).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
           {sortCards(category.giftCards, sort).map((card) => (
             <PlannedCard key={card.id} card={card} onEdit={() => onEditCard(card)} disabled={busy} />
           ))}
