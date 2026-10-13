@@ -2,6 +2,19 @@
 
 A self-hosted gift card organizer and spending planner. All authorized users share the same categories and cards.
 
+## Using the homepage
+
+Create categories with **New category** beside the page heading, and add cards
+with **Add card** in the header or a category's three-dot menu. The category menu
+also provides rename and delete actions. Empty categories remain visible.
+
+Expand **Show all cards** to edit or delete individual cards. Adding and editing
+use the same dialog, including moving cards between categories. Deleting a
+category asks for confirmation and removes all of its cards; deleting an
+individual card also requires confirmation. Spending plans still live on each
+category. Mobile uses centered cards; larger screens use a two- or three-column
+grid. The former `/manage` address redirects to the homepage after sign-in.
+
 ## Development
 
 Use Node.js 22.9+ and npm. Copy `.env.example` to `.env`, then run:
