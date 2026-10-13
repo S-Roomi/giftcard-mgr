@@ -17,6 +17,30 @@ The account command prompts for a password without displaying it. Open http://lo
 
 `APP_URL` must match the browser's origin (scheme, hostname, and port), because forms and API mutations check the request origin. For development on another port, update it accordingly.
 
+## Color themes
+
+Set the app-wide theme in `.env`:
+
+```dotenv
+APP_THEME="rosepine"
+```
+
+Supported values are `default` (the original slate/emerald palette) and `rosepine`
+(Rosé Pine main). Omitting or leaving the value empty selects `default`; unsupported
+names fail environment validation. Restart `npm run dev` or the production server
+after changing the value. For Docker, run `docker compose up -d` to recreate the
+container with the updated environment; once theme support is built into the image,
+switching palettes requires no image rebuild.
+
+The server sets `data-theme` on the root HTML element before rendering, so login,
+pages, and dialogs share the same palette without a client-side theme flash.
+
+To add a palette, add its name to `APP_THEME` in `src/env.js` and define a matching
+`:root[data-theme="name"]` block in `src/styles/globals.css`. Override the
+`--app-*` variables there (and `color-scheme` for a light theme). Components use
+semantic Tailwind utilities such as `bg-canvas`, `bg-surface`, `text-accent`, and
+`text-on-primary`; use these for new UI instead of hard-coded palette colors.
+
 ## Local network access on port 6565
 
 Set `APP_URL` in `.env` to your hosting device's LAN address, for example:

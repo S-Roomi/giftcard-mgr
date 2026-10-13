@@ -11,7 +11,7 @@ export default async function Home() {
 
   return (
     <HydrateClient>
-      <main className="min-h-screen bg-slate-950 text-white">
+      <main className="min-h-screen bg-canvas text-foreground">
         <AccountMenu username={session.user.username} />
         <UsePage />
       </main>

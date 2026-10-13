@@ -61,25 +61,25 @@ export function CardModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/60 p-4"
       onClick={onClose}
     >
       <form
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-xl"
+        className="w-full max-w-md rounded-xl border border-edge bg-raised p-6 shadow-xl"
       >
-        <h2 className="mb-4 text-lg font-semibold text-white">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
           {card ? "Edit gift card" : "Add gift card"}
         </h2>
 
         <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className="flex flex-col gap-1 text-sm text-secondary">
             Category
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(Number(e.target.value))}
-              className="rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
+              className="rounded-md border border-edge-strong bg-surface px-3 py-2 text-foreground focus:border-primary-hover focus:outline-none"
             >
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -89,19 +89,19 @@ export function CardModal({
             </select>
           </label>
 
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className="flex flex-col gap-1 text-sm text-secondary">
             Card code / number *
             <input
               required
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="e.g. 6273-9917-4402"
-              className="rounded-md border border-slate-600 bg-slate-900 px-3 py-2 font-mono text-white focus:border-emerald-500 focus:outline-none"
+              className="rounded-md border border-edge-strong bg-surface px-3 py-2 font-mono text-foreground focus:border-primary-hover focus:outline-none"
             />
           </label>
 
           <div className="grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1 text-sm text-slate-300">
+            <label className="flex flex-col gap-1 text-sm text-secondary">
               Balance ($) *
               <input
                 required
@@ -111,59 +111,59 @@ export function CardModal({
                 value={balance}
                 onChange={(e) => setBalance(e.target.value)}
                 placeholder="25.00"
-                className="rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
+                className="rounded-md border border-edge-strong bg-surface px-3 py-2 text-foreground focus:border-primary-hover focus:outline-none"
               />
             </label>
 
-            <label className="flex flex-col gap-1 text-sm text-slate-300">
+            <label className="flex flex-col gap-1 text-sm text-secondary">
               PIN
               <input
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 placeholder="optional"
-                className="rounded-md border border-slate-600 bg-slate-900 px-3 py-2 font-mono text-white focus:border-emerald-500 focus:outline-none"
+                className="rounded-md border border-edge-strong bg-surface px-3 py-2 font-mono text-foreground focus:border-primary-hover focus:outline-none"
               />
             </label>
           </div>
 
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className="flex flex-col gap-1 text-sm text-secondary">
             Expiry date
             <input
               type="date"
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
-              className="rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none [color-scheme:dark]"
+              className="rounded-md border border-edge-strong bg-surface px-3 py-2 text-foreground focus:border-primary-hover focus:outline-none"
             />
           </label>
 
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className="flex flex-col gap-1 text-sm text-secondary">
             Notes
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="optional"
-              className="rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
+              className="rounded-md border border-edge-strong bg-surface px-3 py-2 text-foreground focus:border-primary-hover focus:outline-none"
             />
           </label>
         </div>
 
         {error && (
-          <p className="mt-3 text-sm text-red-400">{error.message}</p>
+          <p className="mt-3 text-sm text-danger">{error.message}</p>
         )}
 
         <div className="mt-5 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-4 py-2 text-sm text-slate-300 hover:bg-slate-700"
+            className="rounded-md px-4 py-2 text-sm text-secondary hover:bg-edge"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
           >
             {isPending ? "Saving…" : card ? "Save changes" : "Add card"}
           </button>

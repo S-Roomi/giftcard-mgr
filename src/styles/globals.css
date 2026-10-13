@@ -1,5 +1,86 @@
 @import "tailwindcss";
 
+/* Semantic utilities keep component styles independent of any palette. */
+@theme inline {
+  --color-canvas: var(--app-canvas);
+  --color-surface: var(--app-surface);
+  --color-raised: var(--app-raised);
+  --color-edge: var(--app-edge);
+  --color-edge-strong: var(--app-edge-strong);
+  --color-muted: var(--app-muted);
+  --color-subtle: var(--app-subtle);
+  --color-secondary: var(--app-secondary);
+  --color-soft: var(--app-soft);
+  --color-bright: var(--app-bright);
+  --color-primary: var(--app-primary);
+  --color-primary-hover: var(--app-primary-hover);
+  --color-accent: var(--app-accent);
+  --color-accent-hover: var(--app-accent-hover);
+  --color-warning-fill: var(--app-warning-fill);
+  --color-warning-focus: var(--app-warning-focus);
+  --color-warning: var(--app-warning);
+  --color-danger: var(--app-danger);
+  --color-danger-fill: var(--app-danger-fill);
+  --color-foreground: var(--app-foreground);
+  --color-on-primary: var(--app-on-primary);
+  --color-scrim: var(--app-scrim);
+}
+
+:root {
+  color-scheme: dark;
+  --app-canvas: var(--color-slate-950);
+  --app-surface: var(--color-slate-900);
+  --app-raised: var(--color-slate-800);
+  --app-edge: var(--color-slate-700);
+  --app-edge-strong: var(--color-slate-600);
+  --app-muted: var(--color-slate-500);
+  --app-subtle: var(--color-slate-400);
+  --app-secondary: var(--color-slate-300);
+  --app-soft: var(--color-slate-200);
+  --app-bright: var(--color-slate-100);
+  --app-primary: var(--color-emerald-600);
+  --app-primary-hover: var(--color-emerald-500);
+  --app-accent: var(--color-emerald-400);
+  --app-accent-hover: var(--color-emerald-300);
+  --app-warning-fill: var(--color-amber-600);
+  --app-warning-focus: var(--color-amber-500);
+  --app-warning: var(--color-amber-400);
+  --app-danger: var(--color-red-400);
+  --app-danger-fill: var(--color-red-500);
+  --app-foreground: #fff;
+  --app-on-primary: #fff;
+  --app-scrim: #000;
+}
+
+/* Rosé Pine main: https://rosepinetheme.com/palette/
+ * Subtle text is used for secondary copy to keep it legible on dark surfaces.
+ * The primary hover color is a lighter tint of Rose.
+ */
+:root[data-theme="rosepine"] {
+  --app-canvas: #191724;
+  --app-surface: #1f1d2e;
+  --app-raised: #26233a;
+  --app-edge: #403d52;
+  --app-edge-strong: #524f67;
+  --app-muted: #908caa;
+  --app-subtle: #908caa;
+  --app-secondary: #e0def4;
+  --app-soft: #e0def4;
+  --app-bright: #e0def4;
+  --app-primary: #ebbcba;
+  --app-primary-hover: #f2d2d1;
+  --app-accent: #9ccfd8;
+  --app-accent-hover: #c4a7e7;
+  --app-warning-fill: #f6c177;
+  --app-warning-focus: #f6c177;
+  --app-warning: #f6c177;
+  --app-danger: #eb6f92;
+  --app-danger-fill: #eb6f92;
+  --app-foreground: #e0def4;
+  --app-on-primary: #191724;
+  --app-scrim: #000;
+}
+
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";

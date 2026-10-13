@@ -7,6 +7,7 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
+    APP_THEME: z.enum(["default", "rosepine"]).default("default"),
     DATABASE_URL: z.string().url(),
     APP_URL: z.string().url().refine((value) => {
       const url = new URL(value);
@@ -33,6 +34,7 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
+    APP_THEME: process.env.APP_THEME,
     DATABASE_URL: process.env.DATABASE_URL,
     APP_URL: process.env.APP_URL,
     NODE_ENV: process.env.NODE_ENV,
