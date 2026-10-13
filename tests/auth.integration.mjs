@@ -125,11 +125,16 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
       const session = await db.session.findFirstOrThrow();
       assert.equal(session.userId, user.id);
       assert.notEqual(session.tokenHash, cookie.split("=")[1]);
-      for (const path of ["/", "/manage"]) {
-        const page = await request(path, { headers: { Cookie: cookie } });
-        assert.equal(page.status, 200);
-        assert.ok((await page.text()).includes("PRIVATE-CATEGORY"));
-      }
+      const page = await request("/", { headers: { Cookie: cookie } });
+      assert.equal(page.status, 200);
+      const html = await page.text();
+      assert.ok(html.includes("PRIVATE-CATEGORY"));
+      assert.ok(html.includes("New category"));
+      assert.ok(html.includes("Add card"));
+      assert.equal(html.includes('href="/manage"'), false);
+      const legacyPage = await request("/manage", { headers: { Cookie: cookie } });
+      assert.equal(legacyPage.status, 307);
+      assert.equal(new URL(legacyPage.headers.get("location"), address).pathname, "/");
       const api = await request("/api/trpc/category.getAll", { headers: { Cookie: cookie } });
       assert.equal(api.status, 200);
       assert.ok((await api.text()).includes("PRIVATE-CARD-CODE"));
@@ -149,6 +154,23 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
         body: JSON.stringify({ json: { name: "Foreign origin mutation" } }),
       })).status, 403);
       assert.equal(await db.category.count({ where: { name: "Blocked origin" } }), 0);
+    });
+
+    await t.test("empty categories stay visible on the homepage after creation and renaming", async () => {
+      const authenticated = client(cookie);
+      const category = await authenticated.category.create.mutate({ name: "NEW-EMPTY-CATEGORY" });
+      let page = await request("/", { headers: { Cookie: cookie } });
+      let html = await page.text();
+      assert.ok(html.includes("NEW-EMPTY-CATEGORY"));
+      assert.ok(html.includes("Add first card"));
+      await authenticated.category.rename.mutate({ id: category.id, name: "RENAMED-EMPTY-CATEGORY" });
+      page = await request("/", { headers: { Cookie: cookie } });
+      html = await page.text();
+      assert.ok(html.includes("RENAMED-EMPTY-CATEGORY"));
+      assert.equal(html.includes("NEW-EMPTY-CATEGORY"), false);
+      await authenticated.category.delete.mutate({ id: category.id });
+      page = await request("/", { headers: { Cookie: cookie } });
+      assert.equal((await page.text()).includes("RENAMED-EMPTY-CATEGORY"), false);
     });
 
     await t.test("session survives a restart, then logout revokes the token", async () => {

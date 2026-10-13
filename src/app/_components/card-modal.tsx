@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { api, type RouterOutputs } from "~/trpc/react";
 
@@ -19,6 +19,19 @@ export function CardModal({
   onClose: () => void;
 }) {
   const utils = api.useUtils();
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    dialog?.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog?.close();
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
 
   const [code, setCode] = useState(card?.code ?? "");
   const [pin, setPin] = useState(card?.pin ?? "");
@@ -42,6 +55,7 @@ export function CardModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPending) return;
     const parsedBalance = Number.parseFloat(balance);
     if (Number.isNaN(parsedBalance) || parsedBalance < 0) return;
     const data = {
@@ -60,26 +74,34 @@ export function CardModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/60 p-4"
-      onClick={onClose}
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={titleId}
+      onCancel={(event) => {
+        event.preventDefault();
+        if (!isPending) onClose();
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget && !isPending) onClose();
+      }}
+      className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-xl border border-edge bg-raised p-0 text-foreground shadow-xl backdrop:bg-scrim/60"
     >
       <form
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-xl border border-edge bg-raised p-6 shadow-xl"
+        className="min-w-0 p-5 sm:p-6"
       >
-        <h2 className="mb-4 text-lg font-semibold text-foreground">
+        <h2 id={titleId} className="mb-4 text-lg font-semibold text-foreground">
           {card ? "Edit gift card" : "Add gift card"}
         </h2>
 
-        <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm text-secondary">
+        <fieldset disabled={isPending} className="flex min-w-0 flex-col gap-3">
+          <label className="flex min-w-0 flex-col gap-1 text-sm text-secondary">
             Category
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(Number(e.target.value))}
-              className="rounded-md border border-edge-strong bg-surface px-3 py-2 text-foreground focus:border-primary-hover focus:outline-none"
+              className="min-w-0 w-full rounded-md border border-edge-strong bg-surface px-3 py-2 text-foreground focus:border-primary-hover focus:outline-none"
             >
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -89,19 +111,20 @@ export function CardModal({
             </select>
           </label>
 
-          <label className="flex flex-col gap-1 text-sm text-secondary">
+          <label className="flex min-w-0 flex-col gap-1 text-sm text-secondary">
             Card code / number *
             <input
+              autoFocus
               required
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="e.g. 6273-9917-4402"
-              className="rounded-md border border-edge-strong bg-surface px-3 py-2 font-mono text-foreground focus:border-primary-hover focus:outline-none"
+              className="min-w-0 w-full rounded-md border border-edge-strong bg-surface px-3 py-2 font-mono text-foreground focus:border-primary-hover focus:outline-none"
             />
           </label>
 
-          <div className="grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1 text-sm text-secondary">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="flex min-w-0 flex-col gap-1 text-sm text-secondary">
               Balance ($) *
               <input
                 required
@@ -111,50 +134,51 @@ export function CardModal({
                 value={balance}
                 onChange={(e) => setBalance(e.target.value)}
                 placeholder="25.00"
-                className="rounded-md border border-edge-strong bg-surface px-3 py-2 text-foreground focus:border-primary-hover focus:outline-none"
+                className="min-w-0 w-full rounded-md border border-edge-strong bg-surface px-3 py-2 text-foreground focus:border-primary-hover focus:outline-none"
               />
             </label>
 
-            <label className="flex flex-col gap-1 text-sm text-secondary">
+            <label className="flex min-w-0 flex-col gap-1 text-sm text-secondary">
               PIN
               <input
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 placeholder="optional"
-                className="rounded-md border border-edge-strong bg-surface px-3 py-2 font-mono text-foreground focus:border-primary-hover focus:outline-none"
+                className="min-w-0 w-full rounded-md border border-edge-strong bg-surface px-3 py-2 font-mono text-foreground focus:border-primary-hover focus:outline-none"
               />
             </label>
           </div>
 
-          <label className="flex flex-col gap-1 text-sm text-secondary">
+          <label className="flex min-w-0 flex-col gap-1 text-sm text-secondary">
             Expiry date
             <input
               type="date"
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
-              className="rounded-md border border-edge-strong bg-surface px-3 py-2 text-foreground focus:border-primary-hover focus:outline-none"
+              className="min-w-0 w-full rounded-md border border-edge-strong bg-surface px-3 py-2 text-foreground focus:border-primary-hover focus:outline-none"
             />
           </label>
 
-          <label className="flex flex-col gap-1 text-sm text-secondary">
+          <label className="flex min-w-0 flex-col gap-1 text-sm text-secondary">
             Notes
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="optional"
-              className="rounded-md border border-edge-strong bg-surface px-3 py-2 text-foreground focus:border-primary-hover focus:outline-none"
+              className="min-w-0 w-full rounded-md border border-edge-strong bg-surface px-3 py-2 text-foreground focus:border-primary-hover focus:outline-none"
             />
           </label>
-        </div>
+        </fieldset>
 
         {error && (
-          <p className="mt-3 text-sm text-danger">{error.message}</p>
+          <p role="alert" className="mt-3 text-sm text-danger">{error.message}</p>
         )}
 
         <div className="mt-5 flex justify-end gap-2">
           <button
             type="button"
+            disabled={isPending}
             onClick={onClose}
             className="rounded-md px-4 py-2 text-sm text-secondary hover:bg-edge"
           >
@@ -169,6 +193,6 @@ export function CardModal({
           </button>
         </div>
       </form>
-    </div>
+    </dialog>
   );
 }
