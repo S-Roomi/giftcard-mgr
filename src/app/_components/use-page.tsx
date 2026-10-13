@@ -64,19 +64,19 @@ export function UsePage() {
   const visible = categories.filter((c) => c.giftCards.length > 0);
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-10">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
+    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 md:py-10 lg:px-8">
+      <header className="mx-auto mb-6 flex w-full max-w-md flex-col items-center gap-4 text-center md:mb-8 md:max-w-none md:flex-row md:flex-wrap md:justify-between md:text-left">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Your Gift Cards</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Your Gift Cards</h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-wrap items-center justify-center gap-3 md:w-auto md:justify-end">
           <label className="flex items-center gap-2 text-sm text-subtle">
-            Use
+            Sort by
             <select
               value={sort}
               onChange={(e) => changeSort(e.target.value as SortKey)}
-              className="rounded-md border border-edge-strong bg-surface px-3 py-2 text-sm text-foreground focus:border-primary-hover focus:outline-none"
+              className="min-h-11 rounded-md border border-edge-strong bg-surface px-3 py-2 text-sm text-foreground focus:border-primary-hover focus:outline-none"
             >
               {Object.entries(SORT_OPTIONS).map(([key, label]) => (
                 <option key={key} value={key}>
@@ -87,7 +87,7 @@ export function UsePage() {
           </label>
           <Link
             href="/manage"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
+            className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
           >
             Manage cards
           </Link>
@@ -96,14 +96,14 @@ export function UsePage() {
 
       <div className="flex justify-center">
         {visible.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-edge p-12 text-center text-subtle">
+          <div className="w-full max-w-md rounded-xl border border-dashed border-edge px-6 py-12 text-center text-subtle md:max-w-none md:py-20">
             No gift cards yet.{" "}
             <Link href="/manage" className="text-accent hover:underline">
               Add some in the manager
             </Link>
           </div>
         ) : (
-          <div className="flex w-full flex-col items-center gap-5">
+          <div className="grid w-full max-w-md grid-cols-1 items-start gap-5 md:max-w-none md:grid-cols-2 md:gap-6 xl:grid-cols-3">
             {visible.map((category) => (
               <CategoryPlanner
                 key={category.id}
@@ -169,20 +169,21 @@ function CategoryPlanner({
   };
 
   return (
-    <div className="flex w-full max-w-md flex-col gap-4 rounded-xl border border-edge bg-raised/60 p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">{category.name}</h2>
+    <div className="flex min-w-0 w-full flex-col gap-4 rounded-xl border border-edge bg-raised/60 p-5 md:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 className="break-words text-lg font-semibold text-foreground">{category.name}</h2>
           <p className="mt-0.5 text-sm text-subtle">
             {funded.length} card{funded.length === 1 ? "" : "s"} available
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex shrink-0 flex-col items-end gap-1">
           <span className="text-2xl font-bold text-accent">
             {currency.format(total)}
           </span>
           <button
             onClick={() => setShowAll((v) => !v)}
+            aria-expanded={showAll}
             className="text-xs text-subtle hover:text-foreground"
           >
             {showAll ? "Hide cards" : "Show all cards"}
@@ -213,7 +214,7 @@ function CategoryPlanner({
               value={amountStr}
               onChange={(e) => setAmountStr(e.target.value)}
               placeholder="e.g. 20"
-              className="rounded-md border border-edge bg-surface px-3 py-2 text-base text-foreground [appearance:textfield] placeholder:text-muted focus:border-primary-hover focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              className="min-w-0 w-full rounded-md border border-edge bg-surface px-3 py-2 text-base text-foreground [appearance:textfield] placeholder:text-muted focus:border-primary-hover focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             />
           </label>
 
@@ -263,9 +264,9 @@ function PlannedCard({ card, portion }: { card: GiftCard; portion?: number }) {
   };
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-edge bg-surface/70 p-4">
+    <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-edge bg-surface/70 p-4">
       {portion !== undefined ? (
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="text-lg font-bold text-warning">
             Use {currency.format(portion)}
           </span>
@@ -327,7 +328,7 @@ function PlannedCard({ card, portion }: { card: GiftCard; portion?: number }) {
         )}
       </div>
 
-      {card.notes && <p className="text-sm text-muted">{card.notes}</p>}
+      {card.notes && <p className="break-words text-sm text-muted">{card.notes}</p>}
     </div>
   );
 }
