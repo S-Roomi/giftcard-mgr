@@ -42,8 +42,22 @@ Set the app-wide theme in `.env`:
 APP_THEME="rosepine"
 ```
 
-Supported values are `default` (the original slate/emerald palette) and `rosepine`
-(Rosé Pine main). Omitting or leaving the value empty selects `default`; unsupported
+Supported themes:
+
+| `APP_THEME` | Palette |
+| --- | --- |
+| `default` | Original slate/emerald (dark) |
+| `rosepine` | Rosé Pine main (dark) |
+| `catppuccin` or `catppuccin-mocha` | Catppuccin Mocha (dark) |
+| `catppuccin-frappe` | Catppuccin Frappé (dark) |
+| `catppuccin-macchiato` | Catppuccin Macchiato (dark) |
+| `catppuccin-latte` | Catppuccin Latte (light) |
+
+For example, set `APP_THEME="catppuccin"` for Mocha. The Catppuccin themes use
+the [official palettes](https://catppuccin.com/palette/) with mauve primary buttons;
+Latte uses a darker yellow for readable warning text on light backgrounds.
+
+Omitting or leaving the value empty selects `default`; unsupported
 names fail environment validation. Restart `npm run dev` or the production server
 after changing the value. For Docker, run `docker compose up -d` to recreate the
 container with the updated environment; once theme support is built into the image,

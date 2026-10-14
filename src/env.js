@@ -7,7 +7,15 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
-    APP_THEME: z.enum(["default", "rosepine"]).default("default"),
+    APP_THEME: z.enum([
+      "default",
+      "rosepine",
+      "catppuccin",
+      "catppuccin-mocha",
+      "catppuccin-frappe",
+      "catppuccin-macchiato",
+      "catppuccin-latte",
+    ]).default("default"),
     DATABASE_URL: z.string().url(),
     APP_URL: z.string().url().refine((value) => {
       const url = new URL(value);

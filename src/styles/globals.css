@@ -81,6 +81,115 @@
   --app-scrim: #000;
 }
 
+/* Catppuccin palettes: https://catppuccin.com/palette/
+ * Mauve primary buttons; readable subtext for secondary copy.
+ * Latte uses light native controls and a darkened yellow for warning text.
+ */
+:root[data-theme="catppuccin"],
+:root[data-theme="catppuccin-mocha"] {
+  color-scheme: dark;
+  --app-canvas: #1e1e2e;
+  --app-surface: #181825;
+  --app-raised: #313244;
+  --app-edge: #45475a;
+  --app-edge-strong: #585b70;
+  --app-muted: #bac2de;
+  --app-subtle: #bac2de;
+  --app-secondary: #bac2de;
+  --app-soft: #cdd6f4;
+  --app-bright: #cdd6f4;
+  --app-primary: #cba6f7;
+  --app-primary-hover: #b4befe;
+  --app-accent: #94e2d5;
+  --app-accent-hover: #b4befe;
+  --app-warning-fill: #f9e2af;
+  --app-warning-focus: #f9e2af;
+  --app-warning: #f9e2af;
+  --app-danger: #f38ba8;
+  --app-danger-fill: #f38ba8;
+  --app-foreground: #cdd6f4;
+  --app-on-primary: #181825;
+  --app-scrim: #000;
+}
+
+:root[data-theme="catppuccin-frappe"] {
+  color-scheme: dark;
+  --app-canvas: #303446;
+  --app-surface: #292c3c;
+  --app-raised: #414559;
+  --app-edge: #51576d;
+  --app-edge-strong: #626880;
+  --app-muted: #b5bfe2;
+  --app-subtle: #b5bfe2;
+  --app-secondary: #b5bfe2;
+  --app-soft: #c6d0f5;
+  --app-bright: #c6d0f5;
+  --app-primary: #ca9ee6;
+  --app-primary-hover: #babbf1;
+  --app-accent: #81c8be;
+  --app-accent-hover: #babbf1;
+  --app-warning-fill: #e5c890;
+  --app-warning-focus: #e5c890;
+  --app-warning: #e5c890;
+  --app-danger: #e78284;
+  --app-danger-fill: #e78284;
+  --app-foreground: #c6d0f5;
+  --app-on-primary: #292c3c;
+  --app-scrim: #000;
+}
+
+:root[data-theme="catppuccin-macchiato"] {
+  color-scheme: dark;
+  --app-canvas: #24273a;
+  --app-surface: #1e2030;
+  --app-raised: #363a4f;
+  --app-edge: #494d64;
+  --app-edge-strong: #5b6078;
+  --app-muted: #b8c0e0;
+  --app-subtle: #b8c0e0;
+  --app-secondary: #b8c0e0;
+  --app-soft: #cad3f5;
+  --app-bright: #cad3f5;
+  --app-primary: #c6a0f6;
+  --app-primary-hover: #b7bdf8;
+  --app-accent: #8bd5ca;
+  --app-accent-hover: #b7bdf8;
+  --app-warning-fill: #eed49f;
+  --app-warning-focus: #eed49f;
+  --app-warning: #eed49f;
+  --app-danger: #ed8796;
+  --app-danger-fill: #ed8796;
+  --app-foreground: #cad3f5;
+  --app-on-primary: #1e2030;
+  --app-scrim: #000;
+}
+
+:root[data-theme="catppuccin-latte"] {
+  color-scheme: light;
+  --app-canvas: #eff1f5;
+  --app-surface: #e6e9ef;
+  --app-raised: #dce0e8;
+  --app-edge: #bcc0cc;
+  --app-edge-strong: #acb0be;
+  --app-muted: #5c5f77;
+  --app-subtle: #5c5f77;
+  --app-secondary: #5c5f77;
+  --app-soft: #4c4f69;
+  --app-bright: #4c4f69;
+  --app-primary: #8839ef;
+  --app-primary-hover: #1e66f5;
+  --app-accent: #8839ef;
+  --app-accent-hover: #1e66f5;
+  --app-warning-fill: #df8e1d;
+  --app-warning-focus: #865511;
+  --app-warning: #865511;
+  --app-danger: #d20f39;
+  --app-danger-fill: #d20f39;
+  --app-foreground: #4c4f69;
+  --app-on-primary: #ffffff;
+  --app-scrim: #000;
+}
+
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";

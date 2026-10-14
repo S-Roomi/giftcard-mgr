@@ -73,7 +73,9 @@ to hide stale generated files.
 - Use semantic Tailwind utilities such as `bg-canvas`, `bg-surface`,
   `text-foreground`, `text-accent`, and `text-on-primary`. Do not introduce
   hard-coded palette colors into components.
-- `APP_THEME` supports `default` and `rosepine`. The server-rendered root
+- `APP_THEME` supports `default`, `rosepine`, `catppuccin` (Mocha), and
+  `catppuccin-{mocha,frappe,macchiato,latte}`. Latte is a light theme; preserve
+  readable foregrounds and light native controls. The server-rendered root
   `data-theme` selects CSS variables; preserve runtime selection for Docker.
 - Add new themes to both the validation enum in `src/env.js` and the matching
   CSS variable block in `src/styles/globals.css`.
