@@ -7,3 +7,4 @@ prisma/db.sqlite
 prisma/db.sqlite-journal
 tailscale-state
 npm-debug.log*
+generated/prisma
