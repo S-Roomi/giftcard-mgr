@@ -1,9 +1,10 @@
 .env
 .env.*
 .git
-.next
+.next*
 node_modules
 prisma/db.sqlite
 prisma/db.sqlite-journal
 tailscale-state
 npm-debug.log*
+generated/prisma
