@@ -2,6 +2,14 @@
 
 A self-hosted gift card organizer and spending planner. All authorized users share the same categories and cards.
 
+## Features
+
+- Organize gift cards into shared categories, including categories with no cards yet.
+- Add, edit, move, and delete cards with balances, expiry dates, notes, and optional PINs.
+- Rename or delete categories; deleting a category also deletes its cards after confirmation.
+- Build per-category spending plans using the selected card sort order.
+- Protect the app with password-based accounts, persistent sessions, origin-checked mutations, and login throttling.
+
 ## Using the homepage
 
 Create categories with **New category** beside the page heading, and add cards
@@ -32,7 +40,18 @@ npm run dev
 
 The account command prompts for a password without displaying it. Open http://localhost:3000 and sign in. There is no default account or public registration.
 
-`APP_URL` must match the browser's origin (scheme, hostname, and port), because forms and API mutations check the request origin. For development on another port, update it accordingly.
+The first `db:push` creates or synchronizes the SQLite database. This project currently has no Prisma migration history, so use `npm run db:push` for local schema setup. Use `npm run db:studio` to inspect the configured database.
+
+`APP_URL` must match the browser's exact origin (scheme, hostname, and port), because forms and API mutations check the request origin. For development on another port, update it accordingly.
+
+Useful commands:
+
+```sh
+npm run typecheck  # Check TypeScript
+npm run db:studio  # Browse the configured SQLite database
+npm run build      # Create a production build
+npm run start      # Serve the production build
+```
 
 ## Color themes
 
