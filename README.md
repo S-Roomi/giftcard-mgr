@@ -1,146 +1,149 @@
 # Gift Card Manager
 
-A self-hosted gift card organizer and spending planner. All authorized users share the same categories and cards.
+A self-hosted web app for organizing gift cards and planning how to spend them.
+All signed-in users share the same categories and cards.
 
 ## Features
 
-- Organize gift cards into shared categories, including categories with no cards yet.
-- Add, edit, move, and delete cards with balances, expiry dates, notes, and optional PINs.
-- Rename or delete categories; deleting a category also deletes its cards after confirmation.
-- Build per-category spending plans using the selected card sort order.
-- Protect the app with password-based accounts, persistent sessions, origin-checked mutations, and login throttling.
+- **Categories** — group cards by store or purpose; rename or delete categories
+  (deletion removes their cards after confirmation). Empty categories stay visible.
+- **Cards** — track code, optional PIN, balance, expiry date, and notes. Add, edit,
+  move between categories, or delete from a single shared dialog.
+- **Spending plans** — enter an amount to see which cards cover it (in the
+  category's sort order) and any shortfall, then deduct it from those balances.
+- **Per-category sorting** — each category remembers its own order in the browser
+  (default: soonest expiry).
+- **Themes** — Default, Rosé Pine, and Catppuccin (Mocha, Frappé, Macchiato, Latte).
+- **Security** — password accounts, hashed persistent sessions, origin-checked
+  mutations, and login throttling. No public registration.
 
-## Using the homepage
+## Tech stack
 
-Create categories with **New category** beside the page heading, and add cards
-with **Add card** in the header or a category's three-dot menu. The category menu
-also provides rename and delete actions. Empty categories remain visible.
+Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · tRPC 11 ·
+TanStack Query 5 · Prisma 6 · SQLite
 
-Expand **Show all cards** to edit or delete individual cards. Adding and editing
-use the same dialog, including moving cards between categories. Deleting a
-category asks for confirmation and removes all of its cards; deleting an
-individual card also requires confirmation. Spending plans still live on each
-category. Mobile uses centered cards; larger screens use a two- or three-column
-grid. Each category has its own **Sort by** control, which sets both its displayed
-card order and the order used for spending plans. Choices are remembered separately
-per category in the current browser, even after renaming a category. Categories
-without a saved choice default to soonest expiry; the former global sort preference
-is no longer used. The former `/manage` address redirects to the homepage after sign-in.
+## Quick start
 
-## Development
-
-Use Node.js 22.9+ and npm. Copy `.env.example` to `.env`, then run:
+**Requirements:** Node.js 22.9+ and npm.
 
 ```sh
+cp .env.example .env        # then edit values as needed
 npm install
-npm run db:push
-npm run auth:user -- your-username
+npm run db:push             # create or sync the SQLite schema
+npm run auth:user -- alice  # create an account (prompts for a password)
 npm run dev
 ```
 
-The account command prompts for a password without displaying it. Open http://localhost:3000 and sign in. There is no default account or public registration.
+Open <http://localhost:3000> and sign in.
 
-The first `db:push` creates or synchronizes the SQLite database. This project currently has no Prisma migration history, so use `npm run db:push` for local schema setup. Use `npm run db:studio` to inspect the configured database.
+## Configuration
 
-`APP_URL` must match the browser's exact origin (scheme, hostname, and port), because forms and API mutations check the request origin. For development on another port, update it accordingly.
+Set these in `.env`. Restart the app after any change.
 
-Useful commands:
+| Variable | Description | Example |
+| --- | --- | --- |
+| `DATABASE_URL` | SQLite database location. | `file:./db.sqlite` |
+| `APP_URL` | The exact origin used in the browser (scheme, host, and port). Login redirects and mutation origin checks depend on it. | `http://localhost:3000` |
+| `APP_THEME` | Color theme (optional, defaults to `default`). | `catppuccin-latte` |
 
-```sh
-npm run typecheck  # Check TypeScript
-npm run db:studio  # Browse the configured SQLite database
-npm run build      # Create a production build
-npm run start      # Serve the production build
-```
-
-## Color themes
-
-Set the app-wide theme in `.env`:
-
-```dotenv
-APP_THEME="rosepine"
-```
-
-Supported themes:
+### Themes
 
 | `APP_THEME` | Palette |
 | --- | --- |
-| `default` | Original slate/emerald (dark) |
-| `rosepine` | Rosé Pine main (dark) |
-| `catppuccin` or `catppuccin-mocha` | Catppuccin Mocha (dark) |
+| `default` | Slate/emerald (dark) |
+| `rosepine` | Rosé Pine (dark) |
+| `catppuccin`, `catppuccin-mocha` | Catppuccin Mocha (dark) |
 | `catppuccin-frappe` | Catppuccin Frappé (dark) |
 | `catppuccin-macchiato` | Catppuccin Macchiato (dark) |
 | `catppuccin-latte` | Catppuccin Latte (light) |
 
-For example, set `APP_THEME="catppuccin"` for Mocha. The Catppuccin themes use
-the [official palettes](https://catppuccin.com/palette/) with mauve primary buttons;
-Latte uses a darker yellow for readable warning text on light backgrounds.
+Unsupported values fail environment validation. To add a theme, extend the
+`APP_THEME` enum in `src/env.js` and add a matching `:root[data-theme="<name>"]`
+block in `src/styles/globals.css`.
 
-Omitting or leaving the value empty selects `default`; unsupported
-names fail environment validation. Restart `npm run dev` or the production server
-after changing the value. For Docker, run `docker compose up -d` to recreate the
-container with the updated environment; once theme support is built into the image,
-switching palettes requires no image rebuild.
+## Usage
 
-The server sets `data-theme` on the root HTML element before rendering, so login,
-pages, and dialogs share the same palette without a client-side theme flash.
+- **New category** (next to the page heading) creates a category.
+- **Add card** (in the header or a category's ⋯ menu) opens the card dialog.
+- The category ⋯ menu also provides **Rename** and **Delete**.
+- **Show all cards** expands a category to reveal per-card edit/delete controls
+  and the **Sort by** selector.
 
-To add a palette, add its name to `APP_THEME` in `src/env.js` and define a matching
-`:root[data-theme="name"]` block in `src/styles/globals.css`. Override the
-`--app-*` variables there (and `color-scheme` for a light theme). Components use
-semantic Tailwind utilities such as `bg-canvas`, `bg-surface`, `text-accent`, and
-`text-on-primary`; use these for new UI instead of hard-coded palette colors.
+The layout is a single column on mobile, two columns at 768px, and three at 1280px.
 
-## Local network access on port 6565
-
-Set `APP_URL` in `.env` to your hosting device's LAN address, for example:
-
-```dotenv
-APP_URL="http://192.168.1.103:6565"
-```
-
-Then run `npm run dev:lan`, or use Docker as described below. Open that same address on any device connected to your local network. The development server listens on all interfaces; Docker publishes host port 6565 to the application's internal port 3000. No hostname, Caddy, or router port forwarding is required. Allow TCP port 6565 through the host firewall if needed. Reserving the device's LAN IP in your router keeps the address stable.
-
-Use the configured LAN address even when browsing on the hosting device, so login redirects and origin checks match. HTTP connections do not encrypt passwords or session cookies; use HTTPS for internet access.
-
-## Accounts and sessions
-
-Create another account or reset an existing account's password:
+## Account management
 
 ```sh
-npm run auth:user -- another-username
+npm run auth:user -- <username>            # create a user or reset a password
+npm run auth:user -- --delete <username>   # remove a user
 ```
 
-Passwords must contain at least 12 characters and are stored using salted scrypt hashes. Resetting a password revokes that user's sessions. Remove access with:
+- Passwords must be at least 12 characters and are hashed with salted scrypt.
+- Sessions last seven days, persist across restarts, and are stored only as token
+  hashes. Resetting a password revokes that user's sessions.
+- Cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` over HTTPS.
+- Login attempts are limited to 10 per 15 minutes globally. This avoids trusting
+  proxy IP headers, but repeated failures can briefly block all sign-ins.
+
+## Deployment
+
+### Docker
 
 ```sh
-npm run auth:user -- --delete another-username
+APP_URL="http://192.168.1.103:6565" docker compose up -d --build
+docker compose exec app npm run auth:user -- <username>
 ```
 
-Sessions last seven days, survive application restarts, and are invalidated on sign out. SQLite stores only session token hashes. Cookies are HttpOnly, SameSite=Lax, and Secure when using HTTPS. Every page except login requires a session; API calls require a session except the login endpoint. The data layer independently checks authentication, and mutations require a matching Origin header.
+Compose publishes host port **6565** to the container's port 3000. On startup the
+container runs `prisma db push` to apply the schema, then starts the server.
+Accounts must be created inside the deployed database.
 
-Login attempts are limited globally to ten per fifteen minutes, persisted in SQLite. This works behind proxies without trusting client-supplied IP headers; it also means repeated attempts can temporarily prevent everyone from signing in.
+> **Database location:** `compose.yaml` currently sets
+> `DATABASE_URL=file:../app/db.sqlite`, which is **outside** the `/app/data`
+> volume. Before recreating an existing deployment, back up the database, move it
+> into the volume, and set `DATABASE_URL=file:/app/data/db.sqlite`.
 
-## Docker / production
+### Local network (without Docker)
 
-Set `APP_URL` to the address used in your browser, such as `http://192.168.1.103:6565` for local network access. Compose exposes port 6565 directly; Caddy is not required. For internet access, use an HTTPS reverse proxy and restrict direct access to the app's port.
+Set `APP_URL` to the host's LAN address (for example `http://192.168.1.103:6565`),
+then run `npm run dev:lan`. Use that same address on every device, including the
+host, so origin checks pass. Allow TCP port 6565 through the firewall if needed.
 
-```sh
-docker compose up -d --build
-docker compose exec app npm run auth:user -- your-username
+### Internet access
+
+Plain HTTP does not encrypt passwords or session cookies. For access beyond your
+local network, place the app behind an HTTPS reverse proxy and block direct access
+to its port.
+
+## Development
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the dev server on port 3000 |
+| `npm run dev:lan` | Start the dev server on all interfaces, port 6565 |
+| `npm run typecheck` | Type-check the project |
+| `npm run test:auth` | Run authentication integration tests |
+| `npm run build` | Create a production build |
+| `npm run start` | Serve the production build |
+| `npm run db:push` | Sync the Prisma schema to the database |
+| `npm run db:studio` | Browse the database in Prisma Studio |
+
+The project has no Prisma migration history; use `npm run db:push` to set up or
+update the schema. Back up your database before schema changes.
+
+Integration tests start an isolated server on port 3107 with a temporary SQLite
+database. They cover route and API protection, origin checks, login and logout,
+session expiry and rotation, account revocation, restart persistence, and throttling.
+
+### Project structure
+
 ```
-
-Startup applies the SQLite schema, including the authentication tables. Back up your existing database before deploying the schema update. Accounts must be provisioned in the deployed database; local accounts are not copied into the image.
-
-The current Compose database URL is `file:../app/db.sqlite`, which resolves outside the volume mounted at `/app/data`. Before recreating an existing deployment, back up its database and migrate it to the volume, then set `DATABASE_URL` to `file:/app/data/db.sqlite`. The URL is deliberately not changed automatically, to avoid making existing cards appear missing.
-
-Changing `APP_URL` requires restarting the application. API clients must send both their session cookie and the configured Origin header on mutations.
-
-## Validation
-
-```sh
-npm run typecheck
-npm run test:auth
+prisma/schema.prisma        Data model
+scripts/manage-user.mjs     Account management CLI
+src/app/                    Pages, layout, and auth API routes
+src/app/_components/        Homepage UI, card dialog, category form
+src/server/api/routers/     tRPC routers for categories and gift cards
+src/server/auth/            Password hashing, sessions, origin checks
+src/styles/globals.css      Theme tokens
+tests/                      Integration tests
 ```
-
-Authentication tests start an isolated development server on port 3107 and use a temporary SQLite database. They check page/API protection, origin checks, login, logout, expiry, token rotation, account revocation, restart persistence, and throttling.
