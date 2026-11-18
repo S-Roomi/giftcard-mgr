@@ -14,7 +14,7 @@ users share the same categories and cards; there is no per-user card ownership.
   for the project's tooling configuration.
 - `src/app/page.tsx`: authenticated homepage and server-side data prefetch.
 - `src/app/_components/use-page.tsx`: category cards, sorting, spending plans,
-  and homepage management controls.
+  the transaction history panel, and homepage management controls.
 - `src/app/_components/card-modal.tsx`: shared add/edit card dialog.
 - `src/app/_components/category-form.tsx`: category creation and renaming.
 - `src/server/api/routers/`: validated category and gift-card operations.
@@ -23,7 +23,8 @@ users share the same categories and cards; there is no per-user card ownership.
 - `src/trpc/`: query providers and client/server tRPC helpers.
 - `prisma/schema.prisma`: data model; `src/server/db.ts`: shared Prisma client.
 - `src/env.js`: environment validation; `src/styles/globals.css`: theme tokens.
-- `tests/auth.integration.mjs`: integration tests using an isolated database.
+- `tests/auth.integration.mjs`: integration tests using an isolated database,
+  covering authentication, spending, and transaction history.
 
 ## Development and verification
 
@@ -67,6 +68,25 @@ to hide stale generated files.
   handling, mobile scrolling, pending states, and visible mutation errors.
 - Invalidate `category.getAll` after relevant mutations so balances and lists
   refresh. Preserve currency formatting and cent rounding in spending logic.
+
+## Spending and transaction history
+
+- Record planner spends only through `category.spend`. It runs in one database
+  transaction: every selected card is charged and the history saved, or nothing
+  changes. It rejects overspending, cards from other categories, and repeated
+  cards, and refuses if a card's balance changed since it was read.
+- History records planner spends only, not card creation, edits, or deletion.
+  Each `Transaction` has an optional note and the recording user; each
+  `TransactionEntry` holds one card's amount and balance afterwards.
+- Never store or return full card codes or PINs in history; use the masked
+  `cardLabel`. Deleting a card keeps its entries (`giftCardId` becomes null);
+  deleting a category cascades to its history.
+- Order history by transaction ID, not `createdAt`, so clock adjustments cannot
+  reorder it. `category.history` paginates by ID cursor.
+- Invalidate both `category.getAll` and `category.history` after spends and card
+  deletions.
+- Undo of a spend is planned. Keep per-card entries (`amount`, `balanceAfter`,
+  `giftCardId`) intact so a spend can later be reversed.
 
 ## Themes and environment
 

@@ -10,7 +10,13 @@ All signed-in users share the same categories and cards.
 - **Cards** — track code, optional PIN, balance, expiry date, and notes. Add, edit,
   move between categories, or delete from a single shared dialog.
 - **Spending plans** — enter an amount to see which cards cover it (in the
-  category's sort order) and any shortfall, then deduct it from those balances.
+  category's sort order) and any shortfall, add an optional note, then record the
+  spend. All selected cards are charged together or not at all, and a spend larger
+  than a card's balance is rejected.
+- **Transaction history** — open a category's **•••** menu → **View history** to
+  see past spends, newest first: date, total, note, who recorded it, and how much
+  came from each card with the balance left. Card codes appear only as `•••• 1234`.
+  A deleted card's history is kept; deleting a category also deletes its history.
 - **Per-category sorting** — each category remembers its own order in the browser
   (default: soonest expiry).
 - **Themes** — Default, Rosé Pine, and Catppuccin (Mocha, Frappé, Macchiato, Latte).
@@ -129,11 +135,14 @@ to its port.
 | `npm run db:studio` | Browse the database in Prisma Studio |
 
 The project has no Prisma migration history; use `npm run db:push` to set up or
-update the schema. Back up your database before schema changes.
+update the schema. Back up your database before schema changes. After updating an
+existing install to a version with new tables (such as transaction history), run
+`npm run db:push` before starting the app; Docker does this automatically on start.
 
 Integration tests start an isolated server on port 3107 with a temporary SQLite
 database. They cover route and API protection, origin checks, login and logout,
-session expiry and rotation, account revocation, restart persistence, and throttling.
+session expiry and rotation, account revocation, restart persistence, throttling,
+and spending with transaction history.
 
 ### Project structure
 
