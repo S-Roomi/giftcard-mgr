@@ -131,6 +131,7 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
       assert.ok(html.includes("PRIVATE-CATEGORY"));
       assert.ok(html.includes("New category"));
       assert.ok(html.includes("Add card"));
+      assert.ok(html.includes("View history"));
       assert.equal(html.includes('href="/manage"'), false);
       const api = await request("/api/trpc/category.getAll", { headers: { Cookie: cookie } });
       assert.equal(api.status, 200);

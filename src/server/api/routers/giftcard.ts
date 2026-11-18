@@ -40,22 +40,6 @@ export const giftCardRouter = createTRPCRouter({
       });
     }),
 
-  deduct: protectedProcedure
-    .input(z.object({ id: z.number().int(), amount: z.number().positive() }))
-    .mutation(async ({ ctx, input }) => {
-      const card = await ctx.db.giftCard.findUniqueOrThrow({
-        where: { id: input.id },
-      });
-      const newBalance = Math.max(
-        0,
-        Math.round((card.balance - input.amount) * 100) / 100,
-      );
-      return ctx.db.giftCard.update({
-        where: { id: input.id },
-        data: { balance: newBalance },
-      });
-    }),
-
   delete: protectedProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ ctx, input }) => {

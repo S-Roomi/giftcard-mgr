@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { api, type RouterOutputs } from "~/trpc/react";
-import { currency, dateFormat } from "./format";
+import { currency, dateFormat, dateTimeFormat } from "./format";
 import { CardModal } from "./card-modal";
 import { CategoryForm } from "./category-form";
 
@@ -159,16 +159,16 @@ function CategoryPlanner({
   };
 
   const [amountStr, setAmountStr] = useState("");
-  const [isSpending, setIsSpending] = useState(false);
+  const [note, setNote] = useState("");
   const [showAll, setShowAll] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const menuRef = useRef<HTMLDetailsElement>(null);
   const deleteCategory = api.category.delete.useMutation({
     onSuccess: () => utils.category.getAll.invalidate(),
   });
-  const busy = isSpending || deleteCategory.isPending;
-
-  const deductFromCard = api.giftCard.deduct.useMutation();
+  const spend = api.category.spend.useMutation();
+  const busy = spend.isPending || deleteCategory.isPending;
 
   const funded = sortCards(
     category.giftCards.filter((g) => g.balance > 0),
@@ -194,17 +194,22 @@ function CategoryPlanner({
   const shortfall = validAmount ? roundCents(amount - covered) : 0;
 
   const markUsed = async () => {
-    setIsSpending(true);
     try {
-      for (const { card, portion } of selection) {
-        await deductFromCard.mutateAsync({ id: card.id, amount: portion });
-      }
+      // The server charges every selected card or none of them, and records the spend.
+      await spend.mutateAsync({
+        categoryId: category.id,
+        note: note.trim() || null,
+        allocations: selection.map(({ card, portion }) => ({ cardId: card.id, amount: portion })),
+      });
       setAmountStr("");
+      setNote("");
     } catch {
-      // The mutation error is displayed below; refresh any completed deductions.
+      // The mutation error is displayed below; balances are refreshed either way.
     } finally {
-      setIsSpending(false);
-      await utils.category.getAll.invalidate();
+      await Promise.all([
+        utils.category.getAll.invalidate(),
+        utils.category.history.invalidate({ categoryId: category.id }),
+      ]);
     }
   };
 
@@ -233,6 +238,14 @@ function CategoryPlanner({
               <div className="absolute left-0 top-full z-10 w-40 rounded-lg border border-edge bg-raised p-1 shadow-xl">
                 <button disabled={busy} onClick={() => { if (menuRef.current) menuRef.current.open = false; onAddCard(); }} className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-secondary hover:bg-edge disabled:opacity-50">Add card</button>
                 <button disabled={busy} onClick={() => { if (menuRef.current) menuRef.current.open = false; setRenaming(true); }} className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-secondary hover:bg-edge disabled:opacity-50">Rename category</button>
+                <button
+                  onClick={() => { if (menuRef.current) menuRef.current.open = false; setShowHistory((value) => !value); }}
+                  aria-expanded={showHistory}
+                  aria-controls={`history-${category.id}`}
+                  className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-secondary hover:bg-edge"
+                >
+                  {showHistory ? "Hide history" : "View history"}
+                </button>
                 <button
                   disabled={busy}
                   onClick={() => {
@@ -269,7 +282,17 @@ function CategoryPlanner({
 
       {renaming && <CategoryForm category={category} onClose={() => setRenaming(false)} />}
       {deleteCategory.error && <p role="alert" className="text-sm text-danger">{deleteCategory.error.message}</p>}
-      {deductFromCard.error && <p role="alert" className="text-sm text-danger">{deductFromCard.error.message}</p>}
+      {spend.error && <p role="alert" className="text-sm text-danger">{spend.error.message}</p>}
+      {showHistory && (
+        <CategoryHistory
+          categoryId={category.id}
+          categoryName={category.name}
+          onClose={() => {
+            setShowHistory(false);
+            menuRef.current?.querySelector("summary")?.focus();
+          }}
+        />
+      )}
 
       {showAll && (
         <div className="flex flex-col gap-3">
@@ -328,6 +351,19 @@ function CategoryPlanner({
                 ))}
               </div>
 
+              <label className="flex flex-col gap-1 text-sm text-subtle">
+                Note (optional)
+                <input
+                  type="text"
+                  value={note}
+                  maxLength={200}
+                  disabled={busy}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="e.g. Weekly groceries"
+                  className="min-w-0 w-full rounded-md border border-edge bg-surface px-3 py-2 text-base text-foreground placeholder:text-muted focus:border-primary-hover focus:outline-none"
+                />
+              </label>
+
               {shortfall > 0 && (
                 <p className="text-sm font-medium text-danger">
                   {currency.format(shortfall)} short — this category only has{" "}
@@ -340,8 +376,8 @@ function CategoryPlanner({
                 disabled={busy || selection.length === 0}
                 className="rounded-md bg-warning-fill/20 px-4 py-2 text-sm font-medium text-warning hover:bg-warning-fill/30 disabled:opacity-50"
               >
-                {isSpending
-                  ? "…"
+                {spend.isPending
+                  ? "Saving…"
                   : `Used ${currency.format(covered)} across ${selection.length} card${selection.length === 1 ? "" : "s"}`}
               </button>
             </>
@@ -360,7 +396,8 @@ function PlannedCard({ card, portion, onEdit, disabled = false }: {
 }) {
   const utils = api.useUtils();
   const deleteCard = api.giftCard.delete.useMutation({
-    onSuccess: () => utils.category.getAll.invalidate(),
+    // History keeps the deleted card's entries, so refresh it to show them as deleted.
+    onSuccess: () => Promise.all([utils.category.getAll.invalidate(), utils.category.history.invalidate()]),
   });
   const [showPin, setShowPin] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -459,5 +496,102 @@ function PlannedCard({ card, portion, onEdit, disabled = false }: {
 
       {card.notes && <p className="break-words text-sm text-muted">{card.notes}</p>}
     </div>
+  );
+}
+
+function CategoryHistory({ categoryId, categoryName, onClose }: {
+  categoryId: number;
+  categoryName: string;
+  onClose: () => void;
+}) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const history = api.category.history.useInfiniteQuery(
+    { categoryId },
+    { getNextPageParam: (lastPage) => lastPage.nextCursor },
+  );
+  const items = history.data?.pages.flatMap((page) => page.items) ?? [];
+
+  // Move focus into the panel when it opens from the actions menu.
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+
+  return (
+    <section
+      id={`history-${categoryId}`}
+      aria-labelledby={`history-heading-${categoryId}`}
+      className="flex min-w-0 flex-col gap-3 rounded-lg border border-edge bg-surface/70 p-4"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h3
+          id={`history-heading-${categoryId}`}
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-base font-semibold text-foreground focus:outline-none"
+        >
+          History
+        </h3>
+        <button
+          onClick={onClose}
+          aria-label={`Close history for ${categoryName}`}
+          className="min-h-11 rounded-md px-3 py-2 text-xs text-secondary hover:bg-edge"
+        >
+          Close
+        </button>
+      </div>
+
+      {history.isPending ? (
+        <p className="text-sm text-subtle">Loading history…</p>
+      ) : history.isError ? (
+        <div className="flex flex-col items-start gap-2">
+          <p role="alert" className="text-sm text-danger">{history.error.message}</p>
+          <button onClick={() => void history.refetch()} className="min-h-11 rounded-md px-3 py-2 text-sm text-accent hover:bg-edge">
+            Try again
+          </button>
+        </div>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-subtle">No spends recorded yet.</p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-edge">
+          {items.map((item) => (
+            <li key={item.id} className="flex min-w-0 flex-col gap-1 py-3 first:pt-0 last:pb-0">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <span className="font-semibold text-foreground">{currency.format(item.amount)}</span>
+                <time dateTime={item.createdAt.toISOString()} className="text-xs text-subtle">
+                  {dateTimeFormat.format(item.createdAt)}
+                </time>
+              </div>
+              {item.note && <p className="break-words text-sm text-secondary">{item.note}</p>}
+              <p className="text-xs text-muted">
+                by {item.user?.username ?? "a removed account"}
+              </p>
+              <ul className="mt-1 flex flex-col gap-0.5 text-xs text-subtle">
+                {item.entries.map((entry) => (
+                  <li key={entry.id} className="flex flex-wrap justify-between gap-x-3">
+                    <span className="font-mono">
+                      {entry.cardLabel}
+                      {entry.giftCardId === null && <span className="font-sans text-muted"> (deleted card)</span>}
+                    </span>
+                    <span>
+                      {currency.format(entry.amount)} · {currency.format(entry.balanceAfter)} left
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {history.hasNextPage && (
+        <button
+          onClick={() => void history.fetchNextPage()}
+          disabled={history.isFetchingNextPage}
+          className="min-h-11 rounded-md border border-edge-strong px-3 py-2 text-sm text-secondary hover:bg-raised disabled:opacity-50"
+        >
+          {history.isFetchingNextPage ? "Loading…" : "Load more"}
+        </button>
+      )}
+    </section>
   );
 }
