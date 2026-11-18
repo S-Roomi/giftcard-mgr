@@ -99,9 +99,9 @@ to hide stale generated files.
 - The repository currently has no Prisma migration history; Docker startup uses
   `prisma db push --skip-generate`. Do not assume migration scripts alone
   initialize the schema.
-- Compose currently points SQLite outside its mounted `/app/data` volume.
-  Do not silently change that URL: moving an existing deployment requires
-  locating, backing up, and migrating its database.
+- Compose stores SQLite at `/app/data/db.sqlite` in the persistent
+  `giftcard-data` volume. Keep the database inside that volume; moving it
+  requires locating, backing up, and migrating the existing file.
 
 ## Scope and handoff
 
