@@ -98,10 +98,10 @@ Compose publishes host port **6565** to the container's port 3000. On startup th
 container runs `prisma db push` to apply the schema, then starts the server.
 Accounts must be created inside the deployed database.
 
-> **Database location:** `compose.yaml` currently sets
-> `DATABASE_URL=file:../app/db.sqlite`, which is **outside** the `/app/data`
-> volume. Before recreating an existing deployment, back up the database, move it
-> into the volume, and set `DATABASE_URL=file:/app/data/db.sqlite`.
+> **Database location:** the database is stored at `/app/data/db.sqlite` inside
+> the `giftcard-data` volume, so it survives restarts, rebuilds, and updates.
+> `docker compose down -v` or removing the volume deletes it; back up first with
+> `docker compose cp app:/app/data/db.sqlite ./giftcard-backup.sqlite`.
 
 ### Local network (without Docker)
 

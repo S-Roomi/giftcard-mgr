@@ -12,33 +12,68 @@ datasource db {
 }
 
 model Category {
-    id        Int        @id @default(autoincrement())
-    name      String     @unique
-    createdAt DateTime   @default(now())
-    giftCards GiftCard[]
+    id           Int           @id @default(autoincrement())
+    name         String        @unique
+    createdAt    DateTime      @default(now())
+    giftCards    GiftCard[]
+    transactions Transaction[]
 }
 
 model GiftCard {
-    id         Int       @id @default(autoincrement())
-    code       String
-    pin        String?
-    balance    Float
-    expiresAt  DateTime?
-    notes      String?
-    categoryId Int
-    category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-    createdAt  DateTime  @default(now())
-    updatedAt  DateTime  @updatedAt
+    id                 Int                @id @default(autoincrement())
+    code               String
+    pin                String?
+    balance            Float
+    expiresAt          DateTime?
+    notes              String?
+    categoryId         Int
+    category           Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+    createdAt          DateTime           @default(now())
+    updatedAt          DateTime           @updatedAt
+    transactionEntries TransactionEntry[]
 
     @@index([categoryId])
 }
 
+// One planner spend in a category. Amounts are rounded to cents like GiftCard.balance.
+model Transaction {
+    id         Int                @id @default(autoincrement())
+    categoryId Int
+    category   Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+    amount     Float
+    note       String?
+    userId     Int?
+    user       User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+    createdAt  DateTime           @default(now())
+    entries    TransactionEntry[]
+
+    @@index([categoryId, createdAt])
+    @@index([userId])
+}
+
+// The portion of a transaction taken from one card. cardLabel keeps history readable
+// after the card is deleted and holds only a masked suffix, never the full code or PIN.
+model TransactionEntry {
+    id            Int         @id @default(autoincrement())
+    transactionId Int
+    transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+    giftCardId    Int?
+    giftCard      GiftCard?   @relation(fields: [giftCardId], references: [id], onDelete: SetNull)
+    cardLabel     String
+    amount        Float
+    balanceAfter  Float
+
+    @@index([transactionId])
+    @@index([giftCardId])
+}
+
 model User {
-    id           Int       @id @default(autoincrement())
-    username     String    @unique
+    id           Int           @id @default(autoincrement())
+    username     String        @unique
     passwordHash String
     sessions     Session[]
-    createdAt    DateTime  @default(now())
+    transactions Transaction[]
+    createdAt    DateTime      @default(now())
 }
 
 model Session {

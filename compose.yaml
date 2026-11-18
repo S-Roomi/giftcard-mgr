@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: file:../app/db.sqlite
+      DATABASE_URL: file:/app/data/db.sqlite
       APP_URL: ${APP_URL:?Set APP_URL to the address used in your browser}
       APP_THEME: ${APP_THEME:-default}
     ports:
