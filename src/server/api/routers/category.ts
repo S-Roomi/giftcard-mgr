@@ -114,7 +114,8 @@ export const categoryRouter = createTRPCRouter({
       });
     }),
 
-  // Spends for one category, newest first, paginated by transaction ID.
+  // Spends for one category, newest first, paginated by transaction ID. IDs only increase, so
+  // they give the true save order even if the system clock jumps (createdAt is display-only).
   history: protectedProcedure
     .input(
       z.object({
@@ -126,7 +127,7 @@ export const categoryRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const items = await ctx.db.transaction.findMany({
         where: { categoryId: input.categoryId },
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        orderBy: { id: "desc" },
         take: input.limit + 1,
         ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
         select: {
