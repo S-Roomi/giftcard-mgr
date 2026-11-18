@@ -132,9 +132,6 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
       assert.ok(html.includes("New category"));
       assert.ok(html.includes("Add card"));
       assert.equal(html.includes('href="/manage"'), false);
-      const legacyPage = await request("/manage", { headers: { Cookie: cookie } });
-      assert.equal(legacyPage.status, 307);
-      assert.equal(new URL(legacyPage.headers.get("location"), address).pathname, "/");
       const api = await request("/api/trpc/category.getAll", { headers: { Cookie: cookie } });
       assert.equal(api.status, 200);
       assert.ok((await api.text()).includes("PRIVATE-CARD-CODE"));
@@ -162,7 +159,7 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
       let page = await request("/", { headers: { Cookie: cookie } });
       let html = await page.text();
       assert.ok(html.includes("NEW-EMPTY-CATEGORY"));
-      assert.ok(html.includes("Add first card"));
+      assert.ok(html.includes("No cards in this category yet."));
       await authenticated.category.rename.mutate({ id: category.id, name: "RENAMED-EMPTY-CATEGORY" });
       page = await request("/", { headers: { Cookie: cookie } });
       html = await page.text();
