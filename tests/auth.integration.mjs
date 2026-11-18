@@ -173,6 +173,85 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
       assert.equal((await page.text()).includes("RENAMED-EMPTY-CATEGORY"), false);
     });
 
+    await t.test("spends deduct atomically, reject overspending, and are recorded in history", async () => {
+      const authenticated = client(cookie);
+      const category = await db.category.create({ data: { name: "SPEND-CATEGORY" } });
+      const other = await db.category.create({ data: { name: "OTHER-SPEND-CATEGORY" } });
+      const first = await db.giftCard.create({ data: { code: "SPEND-CODE-AAAA1111", balance: 25, categoryId: category.id } });
+      const second = await db.giftCard.create({ data: { code: "SPEND-CODE-BBBB2222", balance: 10, categoryId: category.id } });
+      const foreign = await db.giftCard.create({ data: { code: "SPEND-CODE-CCCC3333", balance: 50, categoryId: other.id } });
+      const balance = async (card) => (await db.giftCard.findUniqueOrThrow({ where: { id: card.id } })).balance;
+      const rejected = (code, text) => (error) => error.data?.code === code && (!text || error.message.includes(text));
+
+      const spend = await authenticated.category.spend.mutate({
+        categoryId: category.id, note: "  Groceries  ",
+        allocations: [{ cardId: first.id, amount: 20 }, { cardId: second.id, amount: 5.5 }],
+      });
+      assert.equal(spend.amount, 25.5);
+      assert.equal(spend.note, "Groceries");
+      assert.equal(spend.userId, user.id);
+      assert.equal(await balance(first), 5);
+      assert.equal(await balance(second), 4.5);
+      assert.deepEqual(spend.entries.map((entry) => [entry.giftCardId, entry.cardLabel, entry.amount, entry.balanceAfter]), [
+        [first.id, "•••• 1111", 20, 5], [second.id, "•••• 2222", 5.5, 4.5],
+      ]);
+
+      // Overspending, a card from another category, or a repeated card change nothing,
+      // even when an earlier card in the same request was valid.
+      const unchanged = async () => {
+        assert.equal(await balance(first), 5);
+        assert.equal(await balance(second), 4.5);
+        assert.equal(await balance(foreign), 50);
+        assert.equal(await db.transaction.count({ where: { categoryId: category.id } }), 1);
+      };
+      await assert.rejects(authenticated.category.spend.mutate({
+        categoryId: category.id, allocations: [{ cardId: second.id, amount: 1 }, { cardId: first.id, amount: 5.01 }],
+      }), rejected("BAD_REQUEST", "enough balance"));
+      await unchanged();
+      await assert.rejects(authenticated.category.spend.mutate({
+        categoryId: category.id, allocations: [{ cardId: second.id, amount: 1 }, { cardId: foreign.id, amount: 1 }],
+      }), rejected("BAD_REQUEST", "no longer in this category"));
+      await unchanged();
+      await assert.rejects(authenticated.category.spend.mutate({
+        categoryId: category.id, allocations: [{ cardId: second.id, amount: 1 }, { cardId: second.id, amount: 1 }],
+      }), rejected("BAD_REQUEST"));
+      await unchanged();
+      await assert.rejects(client(cookie, "http://localhost:6565").category.spend.mutate({
+        categoryId: category.id, allocations: [{ cardId: second.id, amount: 1 }],
+      }), rejected("FORBIDDEN"));
+      await assert.rejects(client().category.spend.mutate({
+        categoryId: category.id, allocations: [{ cardId: second.id, amount: 1 }],
+      }), rejected("UNAUTHORIZED"));
+      await assert.rejects(client().category.history.query({ categoryId: category.id }), rejected("UNAUTHORIZED"));
+      await unchanged();
+
+      // History is newest first, paginates, and never exposes full card codes.
+      for (const note of ["Second", "Third", "Fourth"]) {
+        await authenticated.category.spend.mutate({ categoryId: category.id, note, allocations: [{ cardId: second.id, amount: 0.1 }] });
+      }
+      assert.equal(await balance(second), 4.2);
+      const page1 = await authenticated.category.history.query({ categoryId: category.id, limit: 3 });
+      assert.deepEqual(page1.items.map((item) => item.note), ["Fourth", "Third", "Second"]);
+      assert.equal(page1.items[0].user?.username, "owner");
+      assert.ok(page1.nextCursor);
+      const page2 = await authenticated.category.history.query({ categoryId: category.id, limit: 3, cursor: page1.nextCursor });
+      assert.deepEqual(page2.items.map((item) => item.note), ["Groceries"]);
+      assert.equal(page2.nextCursor, null);
+      assert.equal(JSON.stringify([page1, page2]).includes("SPEND-CODE"), false);
+      assert.deepEqual((await authenticated.category.history.query({ categoryId: other.id })).items, []);
+
+      // Deleting a card keeps its history; deleting the category removes it.
+      await authenticated.giftCard.delete.mutate({ id: first.id });
+      const kept = await authenticated.category.history.query({ categoryId: category.id, limit: 10 });
+      assert.deepEqual(kept.items.at(-1).entries.map((entry) => [entry.giftCardId, entry.cardLabel]), [
+        [null, "•••• 1111"], [second.id, "•••• 2222"],
+      ]);
+      await authenticated.category.delete.mutate({ id: category.id });
+      assert.equal(await db.transaction.count({ where: { categoryId: category.id } }), 0);
+      assert.equal(await db.transactionEntry.count(), 0);
+      await db.category.delete({ where: { id: other.id } });
+    });
+
     await t.test("session survives a restart, then logout revokes the token", async () => {
       await stop();
       await start();
