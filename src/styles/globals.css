@@ -52,6 +52,36 @@
   --app-scrim: #000;
 }
 
+/* Ledger (the default): black canvas with near-black panels and a blue accent.
+ * Text tokens keep at least 4.5:1 contrast on every surface; strong edges (input
+ * borders) keep 3:1. The primary hover is darker so white button text stays readable.
+ */
+:root[data-theme="ledger"] {
+  color-scheme: dark;
+  --app-canvas: #000000;
+  --app-surface: #0c0d10;
+  --app-raised: #17191e;
+  --app-edge: #26292f;
+  --app-edge-strong: #5f6570;
+  --app-muted: #8b919c;
+  --app-subtle: #a1a7b1;
+  --app-secondary: #c9cdd4;
+  --app-soft: #dde0e5;
+  --app-bright: #eceef1;
+  --app-primary: #2f62e8;
+  --app-primary-hover: #2553d4;
+  --app-accent: #7fa3ff;
+  --app-accent-hover: #a6c0ff;
+  --app-warning-fill: #f59e0b;
+  --app-warning-focus: #f59e0b;
+  --app-warning: #fbbf24;
+  --app-danger: #f87171;
+  --app-danger-fill: #ef4444;
+  --app-foreground: #f4f5f7;
+  --app-on-primary: #ffffff;
+  --app-scrim: #000;
+}
+
 /* Rosé Pine main: https://rosepinetheme.com/palette/
  * Subtle text is used for secondary copy to keep it legible on dark surfaces.
  * The primary hover color is a lighter tint of Rose.

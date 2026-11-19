@@ -24,7 +24,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" data-theme={env.APP_THEME ?? "default"} className={`${geist.variable}`}>
+    <html lang="en" data-theme={env.APP_THEME ?? "ledger"} className={`${geist.variable}`}>
       <body className="bg-canvas text-foreground">
         <TRPCReactProvider>{children}</TRPCReactProvider>
       </body>

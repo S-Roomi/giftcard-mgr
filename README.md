@@ -11,7 +11,7 @@ All signed-in users share the same categories and cards.
 - **History** — each category's **•••** menu → **View history** lists past
   spends. Card codes are masked.
 - **Sorting** — each category remembers its own order (default: soonest expiry).
-- **Themes** — Default, Rosé Pine, and Catppuccin.
+- **Themes** — Ledger (black, the default), the original slate theme (`default`), Rosé Pine, and Catppuccin.
 - **Security** — password accounts, hashed sessions, origin checks, and login
   throttling. No public registration.
 
@@ -37,7 +37,7 @@ Set these in `.env` and restart the app after changes.
 | --- | --- | --- |
 | `DATABASE_URL` | SQLite database location | `file:./db.sqlite` |
 | `APP_URL` | Exact browser origin (scheme, host, port) | `http://localhost:3000` |
-| `APP_THEME` | Optional: `default`, `rosepine`, `catppuccin`, or `catppuccin-{mocha,frappe,macchiato,latte}` | `catppuccin-latte` |
+| `APP_THEME` | Optional: `ledger` (default), `default`, `rosepine`, `catppuccin`, or `catppuccin-{mocha,frappe,macchiato,latte}` | `catppuccin-latte` |
 
 ## Deployment
 
