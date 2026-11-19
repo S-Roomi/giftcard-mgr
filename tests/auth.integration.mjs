@@ -131,7 +131,12 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
       assert.ok(html.includes("PRIVATE-CATEGORY"));
       assert.ok(html.includes("New category"));
       assert.ok(html.includes("Add card"));
-      assert.ok(html.includes("View history"));
+      // History renders inline under the card table (its rows load on the client).
+      assert.match(html, />History<\/h3>/);
+      // The selected category's card table and sort control render without expanding anything.
+      assert.ok(html.includes("PRIVATE-CARD-CODE"));
+      assert.ok(html.includes("Sort cards in PRIVATE-CATEGORY"));
+      assert.ok(html.includes("Plan a spend"));
       assert.equal(html.includes('href="/manage"'), false);
       const api = await request("/api/trpc/category.getAll", { headers: { Cookie: cookie } });
       assert.equal(api.status, 200);
@@ -157,10 +162,16 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
     await t.test("empty categories stay visible on the homepage after creation and renaming", async () => {
       const authenticated = client(cookie);
       const category = await authenticated.category.create.mutate({ name: "NEW-EMPTY-CATEGORY" });
-      let page = await request("/", { headers: { Cookie: cookie } });
+      // Every category is listed in the sidebar; the main pane shows the one selected in the URL.
+      let page = await request(`/?category=${category.id}`, { headers: { Cookie: cookie } });
       let html = await page.text();
       assert.ok(html.includes("NEW-EMPTY-CATEGORY"));
       assert.ok(html.includes("No cards in this category yet."));
+      assert.match(html, new RegExp(`href="\\?category=${category.id}"[^>]*aria-current="page"`));
+      // An unknown ID falls back to the first category by name.
+      html = await (await request("/?category=999999", { headers: { Cookie: cookie } })).text();
+      assert.ok(html.includes("NEW-EMPTY-CATEGORY"));
+      assert.match(html, /aria-current="page"[^>]*>(?:(?!<\/a>)[\s\S])*Authenticated mutation/);
       await authenticated.category.rename.mutate({ id: category.id, name: "RENAMED-EMPTY-CATEGORY" });
       page = await request("/", { headers: { Cookie: cookie } });
       html = await page.text();

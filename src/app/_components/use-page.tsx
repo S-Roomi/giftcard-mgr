@@ -1,54 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useRef, useState } from "react";
 
-import { api, type RouterOutputs } from "~/trpc/react";
-import { currency, dateFormat, dateTimeFormat } from "./format";
+import { api } from "~/trpc/react";
+import { currency } from "./format";
+import { CardTable } from "./card-table";
 import { CardModal } from "./card-modal";
 import { CategoryForm } from "./category-form";
+import { CategoryHistory } from "./category-history";
+import { CategorySidebar } from "./category-sidebar";
+import { PlannerPanel } from "./planner-panel";
+import {
+  roundCents,
+  sortCards,
+  type Allocation,
+  type Category,
+  type GiftCard,
+} from "./planner";
+import { TopBar } from "./top-bar";
+import { useCategorySort } from "./use-category-sort";
 
-type Category = RouterOutputs["category"]["getAll"][number];
-type GiftCard = Category["giftCards"][number];
-
-const SORT_OPTIONS = {
-  "expiry-soonest": "Soonest expiry",
-  "value-highest": "Highest value",
-  "value-lowest": "Lowest value",
-  oldest: "Oldest first",
-} as const;
-
-type SortKey = keyof typeof SORT_OPTIONS;
-
-const SORT_STORAGE_PREFIX = "giftcard-category-sort";
-
-function sortCards(cards: GiftCard[], sort: SortKey): GiftCard[] {
-  const sorted = [...cards];
-  switch (sort) {
-    case "expiry-soonest":
-      sorted.sort((a, b) => {
-        if (a.expiresAt === null && b.expiresAt === null)
-          return a.createdAt.getTime() - b.createdAt.getTime();
-        if (a.expiresAt === null) return 1;
-        if (b.expiresAt === null) return -1;
-        return a.expiresAt.getTime() - b.expiresAt.getTime();
-      });
-      break;
-    case "value-highest":
-      sorted.sort((a, b) => b.balance - a.balance);
-      break;
-    case "value-lowest":
-      sorted.sort((a, b) => a.balance - b.balance);
-      break;
-    case "oldest":
-      sorted.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-      break;
-  }
-  return sorted;
-}
-
-const roundCents = (n: number) => Math.round(n * 100) / 100;
-
-export function UsePage() {
+export function UsePage({ username }: { username: string }) {
   const [categories] = api.category.getAll.useSuspenseQuery();
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [modal, setModal] = useState<{
@@ -56,60 +29,63 @@ export function UsePage() {
     categoryId: number;
   } | null>(null);
 
+  // The selected category lives in the URL; unknown or deleted IDs fall back to the first.
+  const searchParams = useSearchParams();
+  const requestedId = searchParams.get("category");
+  const selected = categories.find((category) => String(category.id) === requestedId) ?? categories[0];
+
+  const selectCategory = (id: number) => {
+    if (id === selected?.id && requestedId === String(id)) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("category", String(id));
+    // Next.js syncs pushState with useSearchParams, so back/forward restore the selection.
+    window.history.pushState(null, "", `?${params.toString()}`);
+  };
+
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 md:py-10 lg:px-8">
-      <header className="mx-auto mb-6 flex w-full max-w-md flex-col items-center gap-4 text-center md:mb-8 md:max-w-none md:flex-row md:flex-wrap md:justify-between md:text-left">
-        <div className="flex flex-wrap items-center justify-center gap-3 md:justify-start">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Your Gift Cards</h1>
-        </div>
+    <>
+      <TopBar
+        username={username}
+        creatingCategory={creatingCategory}
+        onToggleCategoryForm={() => setCreatingCategory((value) => !value)}
+        onAddCard={() => {
+          if (selected) setModal({ card: null, categoryId: selected.id });
+        }}
+        addCardDisabled={!selected}
+      />
 
-        <div className="flex w-full flex-wrap items-center justify-center gap-3 md:w-auto md:justify-end">
-          <button
-            onClick={() => setCreatingCategory((value) => !value)}
-            aria-expanded={creatingCategory}
-            aria-controls="new-category-form"
-            className="min-h-11 rounded-md border border-edge-strong px-3 py-2 text-sm font-medium text-secondary hover:bg-raised"
-          >
-            New category
-          </button>
-          <button
-            onClick={() => {
-              const firstCategory = categories[0];
-              if (firstCategory) setModal({ card: null, categoryId: firstCategory.id });
-            }}
-            disabled={categories.length === 0}
-            className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
-          >
-            Add card
-          </button>
-        </div>
-      </header>
-
-      {creatingCategory && (
-        <div id="new-category-form" className="mx-auto mb-6 w-full max-w-md rounded-xl border border-edge bg-raised/60 p-5 md:mx-0">
-          <CategoryForm onClose={() => setCreatingCategory(false)} />
-        </div>
-      )}
-
-      <div className="flex justify-center">
-        {categories.length === 0 ? (
-          <div className="w-full max-w-md rounded-xl border border-dashed border-edge px-6 py-12 text-center text-subtle md:max-w-none md:py-20">
-            No categories yet. Choose “New category” above to get started,
-            then add your first gift card.
-          </div>
-        ) : (
-          <div className="grid w-full max-w-md grid-cols-1 items-start gap-5 md:max-w-none md:grid-cols-2 md:gap-6 xl:grid-cols-3">
-            {categories.map((category) => (
-              <CategoryPlanner
-                key={category.id}
-                category={category}
-                onAddCard={() => setModal({ card: null, categoryId: category.id })}
-                onEditCard={(card) => setModal({ card, categoryId: category.id })}
-              />
-            ))}
+      <main className="mx-auto w-full max-w-md px-4 py-6 md:max-w-7xl md:px-6 md:py-8 lg:px-8">
+        {creatingCategory && (
+          <div id="new-category-form" className="mb-6 w-full rounded-xl border border-edge bg-raised/60 p-5 md:max-w-md">
+            <CategoryForm onClose={() => setCreatingCategory(false)} />
           </div>
         )}
-      </div>
+
+        <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[16rem_minmax(0,1fr)] md:gap-8">
+          <CategorySidebar
+            categories={categories}
+            selectedId={selected?.id ?? null}
+            onSelect={selectCategory}
+          />
+
+          <section aria-label="Selected category" className="min-w-0">
+            {selected ? (
+              <CategoryPlanner
+                key={selected.id}
+                category={selected}
+                onAddCard={() => setModal({ card: null, categoryId: selected.id })}
+                onEditCard={(card) => setModal({ card, categoryId: selected.id })}
+              />
+            ) : (
+              <div className="w-full rounded-xl border border-dashed border-edge px-6 py-12 text-center text-subtle md:py-20">
+                No categories yet. Choose “New category” above to get started,
+                then add your first gift card.
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
+
       {modal && (
         <CardModal
           categories={categories}
@@ -118,7 +94,7 @@ export function UsePage() {
           onClose={() => setModal(null)}
         />
       )}
-    </div>
+    </>
   );
 }
 
@@ -132,36 +108,8 @@ function CategoryPlanner({
   onEditCard: (card: GiftCard) => void;
 }) {
   const utils = api.useUtils();
-  const [sort, setSort] = useState<SortKey>("expiry-soonest");
-  const sortStorageKey = `${SORT_STORAGE_PREFIX}:${category.id}`;
+  const [sort, changeSort] = useCategorySort(category.id);
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(sortStorageKey);
-      setSort(
-        saved && Object.prototype.hasOwnProperty.call(SORT_OPTIONS, saved)
-          ? (saved as SortKey)
-          : "expiry-soonest",
-      );
-    } catch {
-      // Sorting remains usable when browser storage is unavailable.
-      setSort("expiry-soonest");
-    }
-  }, [sortStorageKey]);
-
-  const changeSort = (value: SortKey) => {
-    setSort(value);
-    try {
-      localStorage.setItem(sortStorageKey, value);
-    } catch {
-      // Keep the selection for this visit even if it cannot be persisted.
-    }
-  };
-
-  const [amountStr, setAmountStr] = useState("");
-  const [note, setNote] = useState("");
-  const [showAll, setShowAll] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const menuRef = useRef<HTMLDetailsElement>(null);
   const deleteCategory = api.category.delete.useMutation({
@@ -176,35 +124,18 @@ function CategoryPlanner({
   );
   const total = roundCents(funded.reduce((s, g) => s + g.balance, 0));
 
-  const amount = Number.parseFloat(amountStr);
-  const validAmount = !Number.isNaN(amount) && amount > 0;
-
-  // Pick cards in sort order until the planned amount is covered.
-  const selection: { card: GiftCard; portion: number }[] = [];
-  if (validAmount) {
-    let remaining = amount;
-    for (const card of funded) {
-      if (remaining <= 0) break;
-      const portion = roundCents(Math.min(card.balance, remaining));
-      selection.push({ card, portion });
-      remaining = roundCents(remaining - portion);
-    }
-  }
-  const covered = roundCents(selection.reduce((s, x) => s + x.portion, 0));
-  const shortfall = validAmount ? roundCents(amount - covered) : 0;
-
-  const markUsed = async () => {
+  const recordSpend = async (selection: Allocation[], note: string | null) => {
     try {
       // The server charges every selected card or none of them, and records the spend.
       await spend.mutateAsync({
         categoryId: category.id,
-        note: note.trim() || null,
+        note,
         allocations: selection.map(({ card, portion }) => ({ cardId: card.id, amount: portion })),
       });
-      setAmountStr("");
-      setNote("");
+      return true;
     } catch {
-      // The mutation error is displayed below; balances are refreshed either way.
+      // The mutation error is shown in the planner; balances are refreshed either way.
+      return false;
     } finally {
       await Promise.all([
         utils.category.getAll.invalidate(),
@@ -214,11 +145,12 @@ function CategoryPlanner({
   };
 
   return (
-    <div className="flex min-w-0 w-full flex-col gap-4 rounded-xl border border-edge bg-raised/60 p-5 md:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="flex min-w-0 w-full flex-col gap-5">
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="min-w-0 flex-1">
+          <span className="text-sm text-subtle">Category</span>
           <div className="flex items-start gap-1">
-            <h2 className="min-w-0 flex-1 break-words text-lg font-semibold text-foreground">{category.name}</h2>
+            <h2 className="min-w-0 break-words text-2xl font-bold tracking-tight text-foreground md:text-3xl">{category.name}</h2>
             <details
               ref={menuRef}
               className="relative shrink-0"
@@ -239,14 +171,6 @@ function CategoryPlanner({
                 <button disabled={busy} onClick={() => { if (menuRef.current) menuRef.current.open = false; onAddCard(); }} className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-secondary hover:bg-edge disabled:opacity-50">Add card</button>
                 <button disabled={busy} onClick={() => { if (menuRef.current) menuRef.current.open = false; setRenaming(true); }} className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-secondary hover:bg-edge disabled:opacity-50">Rename category</button>
                 <button
-                  onClick={() => { if (menuRef.current) menuRef.current.open = false; setShowHistory((value) => !value); }}
-                  aria-expanded={showHistory}
-                  aria-controls={`history-${category.id}`}
-                  className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-secondary hover:bg-edge"
-                >
-                  {showHistory ? "Hide history" : "View history"}
-                </button>
-                <button
                   disabled={busy}
                   onClick={() => {
                     if (menuRef.current) menuRef.current.open = false;
@@ -261,337 +185,52 @@ function CategoryPlanner({
               </div>
             </details>
           </div>
-          <p className="mt-0.5 text-sm text-subtle">
-            {funded.length} card{funded.length === 1 ? "" : "s"} available
-          </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <span className="text-2xl font-bold text-accent">
-            {currency.format(total)}
-          </span>
-          <button
-            disabled={category.giftCards.length === 0}
-            onClick={() => setShowAll((v) => !v)}
-            aria-expanded={showAll}
-            className="text-xs text-subtle hover:text-foreground"
-          >
-            {showAll ? "Hide cards" : "Show all cards"}
-          </button>
-        </div>
-      </div>
+        <dl className="flex gap-8">
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-xs text-subtle">Available</dt>
+            <dd className="text-xl font-bold text-accent">{currency.format(total)}</dd>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-xs text-subtle">Cards</dt>
+            <dd className="text-xl font-bold text-foreground">{category.giftCards.length}</dd>
+          </div>
+        </dl>
+      </header>
 
       {renaming && <CategoryForm category={category} onClose={() => setRenaming(false)} />}
       {deleteCategory.error && <p role="alert" className="text-sm text-danger">{deleteCategory.error.message}</p>}
-      {spend.error && <p role="alert" className="text-sm text-danger">{spend.error.message}</p>}
-      {showHistory && (
-        <CategoryHistory
-          categoryId={category.id}
-          categoryName={category.name}
-          onClose={() => {
-            setShowHistory(false);
-            menuRef.current?.querySelector("summary")?.focus();
-          }}
-        />
-      )}
 
-      {showAll && (
-        <div className="flex flex-col gap-3">
-          <label className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-subtle">
-            Sort by
-            <select
-              aria-label={`Sort cards in ${category.name}`}
-              value={sort}
-              disabled={busy}
-              onChange={(event) => changeSort(event.target.value as SortKey)}
-              className="min-h-11 min-w-0 flex-1 rounded-md border border-edge-strong bg-surface px-3 py-2 text-sm text-foreground focus:border-primary-hover focus:outline-none disabled:opacity-50"
-            >
-              {Object.entries(SORT_OPTIONS).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          {sortCards(category.giftCards, sort).map((card) => (
-            <PlannedCard key={card.id} card={card} onEdit={() => onEditCard(card)} disabled={busy} />
-          ))}
+      {/* From 1280px the planner sits beside the table and history; narrower screens stack
+          cards, planner, then history. */}
+      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:grid-rows-[auto_1fr] xl:gap-6">
+        <div className="min-w-0 xl:col-start-1 xl:row-start-1">
+          <CardTable
+            categoryName={category.name}
+            cards={category.giftCards}
+            sort={sort}
+            onSortChange={changeSort}
+            onAddCard={onAddCard}
+            onEditCard={onEditCard}
+            disabled={busy}
+          />
         </div>
-      )}
-
-      {category.giftCards.length === 0 ? (
-        <div className="flex flex-col items-start gap-2 text-sm text-subtle">
-          <p>No cards in this category yet.</p>
-          <button disabled={busy} onClick={onAddCard} className="min-h-11 rounded-md px-3 py-2 text-accent hover:bg-edge disabled:opacity-50">+ Add card</button>
-        </div>
-      ) : funded.length === 0 ? (
-        <p className="text-sm text-muted">
-          All used up — no cards with a balance left.
-        </p>
-      ) : (
-        <>
-          <label className="flex flex-col gap-1 text-sm text-subtle">
-            Order Total
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              value={amountStr}
+        {category.giftCards.length > 0 && (
+          <div className="min-w-0 xl:col-start-2 xl:row-span-2 xl:row-start-1">
+            <PlannerPanel
+              fundedCards={funded}
+              total={total}
               disabled={busy}
-              onChange={(e) => setAmountStr(e.target.value)}
-              placeholder="e.g. 20"
-              className="min-w-0 w-full rounded-md border border-edge bg-surface px-3 py-2 text-base text-foreground [appearance:textfield] placeholder:text-muted focus:border-primary-hover focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              pending={spend.isPending}
+              error={spend.error?.message ?? null}
+              onRecord={recordSpend}
             />
-          </label>
-
-          {validAmount && (
-            <>
-              <div className="flex flex-col gap-3">
-                {selection.map(({ card, portion }) => (
-                  <PlannedCard key={card.id} card={card} portion={portion} />
-                ))}
-              </div>
-
-              <label className="flex flex-col gap-1 text-sm text-subtle">
-                Note (optional)
-                <input
-                  type="text"
-                  value={note}
-                  maxLength={200}
-                  disabled={busy}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="e.g. Weekly groceries"
-                  className="min-w-0 w-full rounded-md border border-edge bg-surface px-3 py-2 text-base text-foreground placeholder:text-muted focus:border-primary-hover focus:outline-none"
-                />
-              </label>
-
-              {shortfall > 0 && (
-                <p className="text-sm font-medium text-danger">
-                  {currency.format(shortfall)} short — this category only has{" "}
-                  {currency.format(total)}.
-                </p>
-              )}
-
-              <button
-                onClick={markUsed}
-                disabled={busy || selection.length === 0}
-                className="rounded-md bg-warning-fill/20 px-4 py-2 text-sm font-medium text-warning hover:bg-warning-fill/30 disabled:opacity-50"
-              >
-                {spend.isPending
-                  ? "Saving…"
-                  : `Used ${currency.format(covered)} across ${selection.length} card${selection.length === 1 ? "" : "s"}`}
-              </button>
-            </>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-function PlannedCard({ card, portion, onEdit, disabled = false }: {
-  card: GiftCard;
-  portion?: number;
-  onEdit?: () => void;
-  disabled?: boolean;
-}) {
-  const utils = api.useUtils();
-  const deleteCard = api.giftCard.delete.useMutation({
-    // History keeps the deleted card's entries, so refresh it to show them as deleted.
-    onSuccess: () => Promise.all([utils.category.getAll.invalidate(), utils.category.history.invalidate()]),
-  });
-  const [showPin, setShowPin] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [copiedPin, setCopiedPin] = useState(false);
-
-  const expired = card.expiresAt !== null && card.expiresAt < new Date();
-
-  const copyCode = async () => {
-    await navigator.clipboard.writeText(card.code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
-  return (
-    <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-edge bg-surface/70 p-4">
-      <div className="flex flex-nowrap">
-        {portion !== undefined ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-lg font-bold text-warning">
-            Use {currency.format(portion)}
-          </span>
-          <span className="text-sm text-subtle">
-            of {currency.format(card.balance)}
-          </span>
-        </div>
-      ) : (
-        <span
-          className={`text-lg font-bold ${
-            card.balance > 0 ? "text-accent" : "text-muted"
-          }`}
-        >
-          {currency.format(card.balance)}
-        </span>
-      )}
-      <div className="flex-grow"></div>
-      {onEdit && (
-        <div className="flex flex-wrap justify-end gap-1">
-          <button disabled={disabled || deleteCard.isPending} onClick={onEdit} className="min-h-11 rounded-md px-3 py-2 text-xs text-secondary hover:bg-edge disabled:opacity-50">Edit</button>
-          <button
-            disabled={disabled || deleteCard.isPending}
-            onClick={() => {
-              if (confirm("Delete this gift card? This cannot be undone.")) deleteCard.mutate({ id: card.id });
-            }}
-            className="min-h-11 rounded-md px-3 py-2 text-xs text-danger hover:bg-danger-fill/10 disabled:opacity-50"
-          >
-            {deleteCard.isPending ? "Deleting…" : "Delete"}
-          </button>
-        </div>
-      )}
-      {deleteCard.error && <p role="alert" className="text-sm text-danger">{deleteCard.error.message}</p>}
-      
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="min-w-0 truncate rounded-md bg-raised px-3 py-2 font-mono text-base text-bright">
-          {card.code}
-        </span>
-        <button
-          onClick={copyCode}
-          title="Copy code"
-          className="shrink-0 rounded bg-edge/60 px-1.5 py-0.5 text-xs text-subtle hover:bg-edge-strong hover:text-foreground"
-        >
-          {copied ? "Copied!" : "Copy"}
-        </button>
-      </div>
-
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-subtle">
-        {card.pin && (
-          <span className="flex items-center gap-1.5">
-            <button
-              onClick={() => setShowPin((v) => !v)}
-              title={showPin ? "Hide PIN" : "Show PIN"}
-              className="hover:text-soft"
-            >
-              PIN:{" "}
-              <span className="font-mono">{showPin ? card.pin : "••••"}</span>
-            </button>
-            <button
-              onClick={async () => {
-                await navigator.clipboard.writeText(card.pin ?? "");
-                setCopiedPin(true);
-                setTimeout(() => setCopiedPin(false), 1500);
-              }}
-              title="Copy PIN"
-              className="rounded bg-edge/60 px-1.5 py-0.5 text-xs hover:bg-edge-strong hover:text-foreground"
-            >
-              {copiedPin ? "Copied!" : "Copy"}
-            </button>
-          </span>
+          </div>
         )}
-        {card.expiresAt && (
-          <span className={expired ? "font-semibold text-danger" : ""}>
-            {expired ? "Expired" : "Expires"} {dateFormat.format(card.expiresAt)}
-          </span>
-        )}
-      </div>
-
-      {card.notes && <p className="break-words text-sm text-muted">{card.notes}</p>}
-    </div>
-  );
-}
-
-function CategoryHistory({ categoryId, categoryName, onClose }: {
-  categoryId: number;
-  categoryName: string;
-  onClose: () => void;
-}) {
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const history = api.category.history.useInfiniteQuery(
-    { categoryId },
-    { getNextPageParam: (lastPage) => lastPage.nextCursor },
-  );
-  const items = history.data?.pages.flatMap((page) => page.items) ?? [];
-
-  // Move focus into the panel when it opens from the actions menu.
-  useEffect(() => {
-    headingRef.current?.focus();
-  }, []);
-
-  return (
-    <section
-      id={`history-${categoryId}`}
-      aria-labelledby={`history-heading-${categoryId}`}
-      className="flex min-w-0 flex-col gap-3 rounded-lg border border-edge bg-surface/70 p-4"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <h3
-          id={`history-heading-${categoryId}`}
-          ref={headingRef}
-          tabIndex={-1}
-          className="text-base font-semibold text-foreground focus:outline-none"
-        >
-          History
-        </h3>
-        <button
-          onClick={onClose}
-          aria-label={`Close history for ${categoryName}`}
-          className="min-h-11 rounded-md px-3 py-2 text-xs text-secondary hover:bg-edge"
-        >
-          Close
-        </button>
-      </div>
-
-      {history.isPending ? (
-        <p className="text-sm text-subtle">Loading history…</p>
-      ) : history.isError ? (
-        <div className="flex flex-col items-start gap-2">
-          <p role="alert" className="text-sm text-danger">{history.error.message}</p>
-          <button onClick={() => void history.refetch()} className="min-h-11 rounded-md px-3 py-2 text-sm text-accent hover:bg-edge">
-            Try again
-          </button>
+        <div className="min-w-0 xl:col-start-1 xl:row-start-2">
+          <CategoryHistory categoryId={category.id} />
         </div>
-      ) : items.length === 0 ? (
-        <p className="text-sm text-subtle">No spends recorded yet.</p>
-      ) : (
-        <ul className="flex flex-col divide-y divide-edge">
-          {items.map((item) => (
-            <li key={item.id} className="flex min-w-0 flex-col gap-1 py-3 first:pt-0 last:pb-0">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <span className="font-semibold text-foreground">{currency.format(item.amount)}</span>
-                <time dateTime={item.createdAt.toISOString()} className="text-xs text-subtle">
-                  {dateTimeFormat.format(item.createdAt)}
-                </time>
-              </div>
-              {item.note && <p className="break-words text-sm text-secondary">{item.note}</p>}
-              <p className="text-xs text-muted">
-                by {item.user?.username ?? "a removed account"}
-              </p>
-              <ul className="mt-1 flex flex-col gap-0.5 text-xs text-subtle">
-                {item.entries.map((entry) => (
-                  <li key={entry.id} className="flex flex-wrap justify-between gap-x-3">
-                    <span className="font-mono">
-                      {entry.cardLabel}
-                      {entry.giftCardId === null && <span className="font-sans text-muted"> (deleted card)</span>}
-                    </span>
-                    <span>
-                      {currency.format(entry.amount)} · {currency.format(entry.balanceAfter)} left
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {history.hasNextPage && (
-        <button
-          onClick={() => void history.fetchNextPage()}
-          disabled={history.isFetchingNextPage}
-          className="min-h-11 rounded-md border border-edge-strong px-3 py-2 text-sm text-secondary hover:bg-raised disabled:opacity-50"
-        >
-          {history.isFetchingNextPage ? "Loading…" : "Load more"}
-        </button>
-      )}
-    </section>
+      </div>
+    </div>
   );
 }

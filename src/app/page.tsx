@@ -1,7 +1,6 @@
 import { UsePage } from "~/app/_components/use-page";
 import { api, HydrateClient } from "~/trpc/server";
 import { requirePageSession } from "~/server/auth/page";
-import { AccountMenu } from "~/app/_components/account-menu";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +10,9 @@ export default async function Home() {
 
   return (
     <HydrateClient>
-      <main className="min-h-screen bg-canvas text-foreground">
-        <AccountMenu username={session.user.username} />
-        <UsePage />
-      </main>
+      <div className="min-h-screen bg-canvas text-foreground">
+        <UsePage username={session.user.username} />
+      </div>
     </HydrateClient>
   );
 }
