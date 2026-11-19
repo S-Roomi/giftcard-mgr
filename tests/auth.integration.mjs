@@ -168,10 +168,10 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
       assert.ok(html.includes("NEW-EMPTY-CATEGORY"));
       assert.ok(html.includes("No cards in this category yet."));
       assert.match(html, new RegExp(`href="\\?category=${category.id}"[^>]*aria-current="page"`));
-      // An unknown ID falls back to the first category by name.
+      // An unknown ID falls back to the first category in sidebar order.
       html = await (await request("/?category=999999", { headers: { Cookie: cookie } })).text();
       assert.ok(html.includes("NEW-EMPTY-CATEGORY"));
-      assert.match(html, /aria-current="page"[^>]*>(?:(?!<\/a>)[\s\S])*Authenticated mutation/);
+      assert.match(html, /aria-current="page"[^>]*>(?:(?!<\/a>)[\s\S])*PRIVATE-CATEGORY/);
       await authenticated.category.rename.mutate({ id: category.id, name: "RENAMED-EMPTY-CATEGORY" });
       page = await request("/", { headers: { Cookie: cookie } });
       html = await page.text();
@@ -180,6 +180,34 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
       await authenticated.category.delete.mutate({ id: category.id });
       page = await request("/", { headers: { Cookie: cookie } });
       assert.equal((await page.text()).includes("RENAMED-EMPTY-CATEGORY"), false);
+    });
+
+    await t.test("categories keep a shared sidebar order that can be changed", async () => {
+      const authenticated = client(cookie);
+      const rejected = (code) => (error) => error.data?.code === code;
+      const order = async () => (await authenticated.category.getAll.query()).map((category) => category.id);
+
+      // New categories are added at the end.
+      const added = await authenticated.category.create.mutate({ name: "AAA-ORDER-TEST" });
+      const before = await order();
+      assert.equal(before.at(-1), added.id);
+
+      // Saving a full order changes what every user sees, including on the homepage.
+      const reversed = [...before].reverse();
+      await authenticated.category.reorder.mutate({ ids: reversed });
+      assert.deepEqual(await order(), reversed);
+      const html = await (await request("/", { headers: { Cookie: cookie } })).text();
+      assert.match(html, /aria-current="page"[^>]*>(?:(?!<\/a>)[\s\S])*AAA-ORDER-TEST/);
+
+      // Stale, partial, padded or repeated lists are rejected and leave the order unchanged.
+      await assert.rejects(authenticated.category.reorder.mutate({ ids: reversed.slice(1) }), rejected("CONFLICT"));
+      await assert.rejects(authenticated.category.reorder.mutate({ ids: [...reversed, 999999] }), rejected("CONFLICT"));
+      await assert.rejects(authenticated.category.reorder.mutate({ ids: [...reversed.slice(1), reversed[1]] }), rejected("BAD_REQUEST"));
+      assert.deepEqual(await order(), reversed);
+
+      // Restore the original order for the tests that follow.
+      await authenticated.category.reorder.mutate({ ids: before });
+      await authenticated.category.delete.mutate({ id: added.id });
     });
 
     await t.test("spends deduct atomically, reject overspending, and are recorded in history", async () => {

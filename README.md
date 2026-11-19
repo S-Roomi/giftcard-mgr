@@ -11,6 +11,8 @@ All signed-in users share the same categories and cards.
 - **History** — each category's **•••** menu → **View history** lists past
   spends. Card codes are masked.
 - **Sorting** — each category remembers its own order (default: soonest expiry).
+- **Category order** — drag categories in the sidebar to reorder them (on a phone,
+  tap **Reorder**, then press and hold). The order is shared by all users.
 - **Themes** — Ledger (black, the default), the original slate theme (`default`), Rosé Pine, and Catppuccin.
 - **Security** — password accounts, hashed sessions, origin checks, and login
   throttling. No public registration.

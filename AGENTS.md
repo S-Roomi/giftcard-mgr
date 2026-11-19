@@ -55,6 +55,10 @@ to hide stale generated files.
 - Management belongs on the homepage: category creation in the header, a header
   add-card button, category action menus, and card edit/delete controls in the
   expanded card list. Keep empty categories visible so users can add cards.
+- Sidebar category order is shared by all users and stored in `Category.position`
+  (ties sort by name; new categories go last). Change it only through
+  `category.reorder`, which takes every category ID once and rejects stale lists.
+  Mouse drag, touch press-and-hold, and keyboard (Space, arrows, Space) all reorder.
 - Mobile uses a minimal centered single column. At 768px use two columns; at
   1280px use three. Preserve shared component state when the viewport changes.
 - Sorting is local to each category. Show its sort control only when

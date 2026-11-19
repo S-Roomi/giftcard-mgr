@@ -13,7 +13,7 @@ function maskCardCode(code: string) {
 export const categoryRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.category.findMany({
-      orderBy: { name: "asc" },
+      orderBy: [{ position: "asc" }, { name: "asc" }],
       include: {
         giftCards: {
           orderBy: [{ expiresAt: "asc" }, { createdAt: "desc" }],
@@ -25,8 +25,37 @@ export const categoryRouter = createTRPCRouter({
   create: protectedProcedure
     .input(z.object({ name: z.string().trim().min(1).max(100) }))
     .mutation(async ({ ctx, input }) => {
+      // New categories go to the end of the sidebar.
+      const last = await ctx.db.category.aggregate({ _max: { position: true } });
       return ctx.db.category.create({
-        data: { name: input.name },
+        data: { name: input.name, position: (last._max.position ?? -1) + 1 },
+      });
+    }),
+
+  // Saves the sidebar order. The list must name every category exactly once, so an order
+  // built from a stale list (a category added or deleted meanwhile) is rejected, not merged.
+  reorder: protectedProcedure
+    .input(
+      z.object({
+        ids: z
+          .array(z.number().int())
+          .max(1000)
+          .refine((ids) => new Set(ids).size === ids.length, "Each category can only appear once."),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.$transaction(async (tx) => {
+        const existing = await tx.category.findMany({ select: { id: true } });
+        const requested = new Set(input.ids);
+        if (existing.length !== input.ids.length || existing.some(({ id }) => !requested.has(id))) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Categories changed since the page loaded. Refresh and try again.",
+          });
+        }
+        for (const [position, id] of input.ids.entries()) {
+          await tx.category.update({ where: { id }, data: { position } });
+        }
       });
     }),
 
