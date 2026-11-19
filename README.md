@@ -40,8 +40,6 @@ npm run auth:user -- alice  # create an account (prompts for a password)
 npm run dev
 ```
 
-Open <http://localhost:3000> and sign in.
-
 ## Configuration
 
 Set these in `.env`. Restart the app after any change.
@@ -67,36 +65,12 @@ Unsupported values fail environment validation. To add a theme, extend the
 `APP_THEME` enum in `src/env.js` and add a matching `:root[data-theme="<name>"]`
 block in `src/styles/globals.css`.
 
-## Usage
-
-- **New category** (next to the page heading) creates a category.
-- **Add card** (in the header or a category's ⋯ menu) opens the card dialog.
-- The category ⋯ menu also provides **Rename** and **Delete**.
-- **Show all cards** expands a category to reveal per-card edit/delete controls
-  and the **Sort by** selector.
-
-The layout is a single column on mobile, two columns at 768px, and three at 1280px.
-
-## Account management
-
-```sh
-npm run auth:user -- <username>            # create a user or reset a password
-npm run auth:user -- --delete <username>   # remove a user
-```
-
-- Passwords must be at least 12 characters and are hashed with salted scrypt.
-- Sessions last seven days, persist across restarts, and are stored only as token
-  hashes. Resetting a password revokes that user's sessions.
-- Cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` over HTTPS.
-- Login attempts are limited to 10 per 15 minutes globally. This avoids trusting
-  proxy IP headers, but repeated failures can briefly block all sign-ins.
-
 ## Deployment
 
 ### Docker
 
 ```sh
-APP_URL="http://192.168.1.103:6565" docker compose up -d --build
+APP_URL="http://{ip address}:6565" docker compose up -d --build
 docker compose exec app npm run auth:user -- <username>
 ```
 
