@@ -13,8 +13,19 @@ users share the same categories and cards; there is no per-user card ownership.
 - Use npm and the existing lockfile. Check `package.json` and `.tool-versions`
   for the project's tooling configuration.
 - `src/app/page.tsx`: authenticated homepage and server-side data prefetch.
-- `src/app/_components/use-page.tsx`: category cards, sorting, spending plans,
-  the transaction history panel, and homepage management controls.
+- `src/app/_components/use-page.tsx`: homepage shell, `?category=<id>`
+  selection, and the selected category's header, actions menu, and spend submit.
+- `src/app/_components/top-bar.tsx`: app name, New category, Add card, account
+  menu with Sign out.
+- `src/app/_components/category-sidebar.tsx`: totals, category list, mobile
+  picker, and drag-and-drop reordering (`@dnd-kit`).
+- `src/app/_components/card-table.tsx`: card table, sort control, row menus.
+- `src/app/_components/planner-panel.tsx`: order total, allocation, note, and
+  Record spend.
+- `src/app/_components/category-history.tsx`: inline spend history.
+- `src/app/_components/planner.ts`: card types, sorting, `planSpend`,
+  `roundCents`, balance and expiring-soon helpers;
+  `use-category-sort.ts`: the per-category sort hook.
 - `src/app/_components/card-modal.tsx`: shared add/edit card dialog.
 - `src/app/_components/category-form.tsx`: category creation and renaming.
 - `src/server/api/routers/`: validated category and gift-card operations.
@@ -24,7 +35,8 @@ users share the same categories and cards; there is no per-user card ownership.
 - `prisma/schema.prisma`: data model; `src/server/db.ts`: shared Prisma client.
 - `src/env.js`: environment validation; `src/styles/globals.css`: theme tokens.
 - `tests/auth.integration.mjs`: integration tests using an isolated database,
-  covering authentication, spending, and transaction history.
+  covering authentication, homepage rendering, category order, spending, and
+  transaction history.
 
 ## Development and verification
 
@@ -52,24 +64,47 @@ to hide stale generated files.
 
 ## UI and behavior conventions
 
-- Management belongs on the homepage: category creation in the header, a header
-  add-card button, category action menus, and card edit/delete controls in the
-  expanded card list. Keep empty categories visible so users can add cards.
+- The homepage is a master–detail "Ledger" layout: a top bar, a category
+  sidebar, and a main pane for the selected category. Management stays on the
+  homepage: New category and Add card in the top bar (Add card defaults to the
+  selected category), the category actions menu (Add card, Rename, Delete) in
+  the category header, and card actions in each table row's menu.
+- The selected category lives in the URL as `?category=<id>`, updated with
+  `history.pushState` so reload and back/forward restore it. Unknown or deleted
+  IDs fall back to the first category in sidebar order. Sidebar entries are real
+  links with `aria-current="page"` on the selected one.
+- Keep empty categories visible in the sidebar so users can add cards.
 - Sidebar category order is shared by all users and stored in `Category.position`
   (ties sort by name; new categories go last). Change it only through
   `category.reorder`, which takes every category ID once and rejects stale lists.
-  Mouse drag, touch press-and-hold, and keyboard (Space, arrows, Space) all reorder.
-- Mobile uses a minimal centered single column. At 768px use two columns; at
-  1280px use three. Preserve shared component state when the viewport changes.
-- Sorting is local to each category. Show its sort control only when
-  **Show all cards** is expanded. The selected order drives both the displayed
-  cards and spending-plan allocation.
+  Mouse drag, touch press-and-hold, and keyboard (Space, arrows, Space) all
+  reorder. Saves are queued in drop order and `category.getAll` is refetched
+  after the last one. A mouse drop must never trigger link navigation.
+- Layout is CSS-only on one component tree, so planner input and other state
+  survive viewport changes:
+  - Under 768px: a centered single column. The sidebar list becomes a category
+    picker (with a **Reorder** button that reveals the list); then the category
+    header, card table (rows restyle into stacked blocks), planner, and history.
+  - 768–1279px: sidebar beside the main pane; the planner sits below the table.
+  - 1280px and up: the planner sits beside the card table and history.
+- The category header shows the available balance and card count only.
+- Card rows highlight cards expiring within 30 days and dim empty or expired
+  cards. Wide tables scroll in their own box. Row menus use the Popover API so
+  the scroll box cannot clip them; they close on scroll and resize.
+- Sorting is local to each category. Its sort control is always visible above
+  the card table. The selected order drives both the table and spending-plan
+  allocation.
 - Persist sorting by stable category ID in browser localStorage
-  (`giftcard-category-sort:<id>`). Default to soonest expiry. Handle unavailable
-  storage gracefully and do not reset the selection when collapsing the list.
+  (`giftcard-category-sort:<id>`). Default to soonest expiry and handle
+  unavailable storage gracefully.
+- The planner is not a form: pressing Enter in its fields must not record a
+  spend before the allocation has been reviewed.
+- History shows the five most recent spends inline; **View full history**
+  reveals the rest of the loaded pages and **Load more** fetches older ones.
 - Confirm card/category deletion; category deletion cascades to its cards.
 - Reuse the existing dialog and forms. Preserve keyboard access, labels, focus
-  handling, mobile scrolling, pending states, and visible mutation errors.
+  handling, 44px touch targets, mobile scrolling, pending states, and visible
+  mutation errors.
 - Invalidate `category.getAll` after relevant mutations so balances and lists
   refresh. Preserve currency formatting and cent rounding in spending logic.
 
