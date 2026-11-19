@@ -1,21 +1,20 @@
 # Gift Card Manager
 
 A self-hosted app for organizing gift cards and planning how to spend them.
-All signed-in users share the same categories and cards.
 
 ## Features
 
-- **Categories and cards** — track code, PIN, balance, expiry, and notes.
-- **Spending plans** — enter an amount to see which cards cover it, then record
-  the spend. All cards are charged together or not at all.
-- **History** — each category's **•••** menu → **View history** lists past
-  spends. Card codes are masked.
-- **Sorting** — each category remembers its own order (default: soonest expiry).
-- **Category order** — drag categories in the sidebar to reorder them (on a phone,
-  tap **Reorder**, then press and hold). The order is shared by all users.
+- **Layout** — pick a category in the sidebar to see
+  its cards, spending planner, and history together. The selected category is
+  kept in the URL.
+- **Categories and cards** — track code, PIN, balance, expiry, and notes. Cards
+  expiring within 30 days are highlighted, and the sidebar shows your total.
+- **Spending** — enter an order total to see which cards cover it and
+  what each has left, then record the spend. All cards are charged together or
+  not at all.
+- **History** — recent spends appear under each category's cards;
+  **View full history** shows the rest. Card codes are masked.
 - **Themes** — Ledger (black, the default), the original slate theme (`default`), Rosé Pine, and Catppuccin.
-- **Security** — password accounts, hashed sessions, origin checks, and login
-  throttling. No public registration.
 
 Built with Next.js 15, React 19, TypeScript, Tailwind CSS 4, tRPC, Prisma, and SQLite.
 
