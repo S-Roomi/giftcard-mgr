@@ -1,132 +1,78 @@
 # Gift Card Manager
 
-A self-hosted web app for organizing gift cards and planning how to spend them.
+A self-hosted app for organizing gift cards and planning how to spend them.
 All signed-in users share the same categories and cards.
 
 ## Features
 
-- **Categories** — group cards by store or purpose; rename or delete categories
-  (deletion removes their cards after confirmation). Empty categories stay visible.
-- **Cards** — track code, optional PIN, balance, expiry date, and notes. Add, edit,
-  move between categories, or delete from a single shared dialog.
-- **Spending plans** — enter an amount to see which cards cover it (in the
-  category's sort order) and any shortfall, add an optional note, then record the
-  spend. All selected cards are charged together or not at all, and a spend larger
-  than a card's balance is rejected.
-- **Transaction history** — open a category's **•••** menu → **View history** to
-  see past spends, newest first: date, total, note, who recorded it, and how much
-  came from each card with the balance left. Card codes appear only as `•••• 1234`.
-  A deleted card's history is kept; deleting a category also deletes its history.
-- **Per-category sorting** — each category remembers its own order in the browser
-  (default: soonest expiry).
-- **Themes** — Default, Rosé Pine, and Catppuccin (Mocha, Frappé, Macchiato, Latte).
-- **Security** — password accounts, hashed persistent sessions, origin-checked
-  mutations, and login throttling. No public registration.
+- **Categories and cards** — track code, PIN, balance, expiry, and notes.
+- **Spending plans** — enter an amount to see which cards cover it, then record
+  the spend. All cards are charged together or not at all.
+- **History** — each category's **•••** menu → **View history** lists past
+  spends. Card codes are masked.
+- **Sorting** — each category remembers its own order (default: soonest expiry).
+- **Themes** — Default, Rosé Pine, and Catppuccin.
+- **Security** — password accounts, hashed sessions, origin checks, and login
+  throttling. No public registration.
 
-## Tech stack
-
-Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · tRPC 11 ·
-TanStack Query 5 · Prisma 6 · SQLite
+Built with Next.js 15, React 19, TypeScript, Tailwind CSS 4, tRPC, Prisma, and SQLite.
 
 ## Quick start
 
-**Requirements:** Node.js 22.9+ and npm.
+Requires Node.js 22.9+.
 
 ```sh
-cp .env.example .env        # then edit values as needed
+cp .env.example .env
 npm install
-npm run db:push             # create or sync the SQLite schema
-npm run auth:user -- alice  # create an account (prompts for a password)
-npm run dev
+npm run db:push                  # create the database schema
+npm run auth:user -- <username>  # create an account or reset a password
+npm run dev                      # http://localhost:3000
 ```
 
 ## Configuration
 
-Set these in `.env`. Restart the app after any change.
+Set these in `.env` and restart the app after changes.
 
 | Variable | Description | Example |
 | --- | --- | --- |
-| `DATABASE_URL` | SQLite database location. | `file:./db.sqlite` |
-| `APP_URL` | The exact origin used in the browser (scheme, host, and port). Login redirects and mutation origin checks depend on it. | `http://localhost:3000` |
-| `APP_THEME` | Color theme (optional, defaults to `default`). | `catppuccin-latte` |
-
-### Themes
-
-| `APP_THEME` | Palette |
-| --- | --- |
-| `default` | Slate/emerald (dark) |
-| `rosepine` | Rosé Pine (dark) |
-| `catppuccin`, `catppuccin-mocha` | Catppuccin Mocha (dark) |
-| `catppuccin-frappe` | Catppuccin Frappé (dark) |
-| `catppuccin-macchiato` | Catppuccin Macchiato (dark) |
-| `catppuccin-latte` | Catppuccin Latte (light) |
-
-Unsupported values fail environment validation. To add a theme, extend the
-`APP_THEME` enum in `src/env.js` and add a matching `:root[data-theme="<name>"]`
-block in `src/styles/globals.css`.
+| `DATABASE_URL` | SQLite database location | `file:./db.sqlite` |
+| `APP_URL` | Exact browser origin (scheme, host, port) | `http://localhost:3000` |
+| `APP_THEME` | Optional: `default`, `rosepine`, `catppuccin`, or `catppuccin-{mocha,frappe,macchiato,latte}` | `catppuccin-latte` |
 
 ## Deployment
 
 ### Docker
 
 ```sh
-APP_URL="http://{ip address}:6565" docker compose up -d --build
+APP_URL="http://<host-ip>:6565" docker compose up -d --build
 docker compose exec app npm run auth:user -- <username>
 ```
 
-Compose publishes host port **6565** to the container's port 3000. On startup the
-container runs `prisma db push` to apply the schema, then starts the server.
-Accounts must be created inside the deployed database.
+The app is served on port 6565 and the schema is applied on startup. Data lives
+in the `giftcard-data` volume. `docker compose down -v` deletes it, so back up first:
 
-> **Database location:** the database is stored at `/app/data/db.sqlite` inside
-> the `giftcard-data` volume, so it survives restarts, rebuilds, and updates.
-> `docker compose down -v` or removing the volume deletes it; back up first with
-> `docker compose cp app:/app/data/db.sqlite ./giftcard-backup.sqlite`.
+```sh
+docker compose cp app:/app/data/db.sqlite ./giftcard-backup.sqlite
+```
 
-### Local network (without Docker)
+### Local network
 
-Set `APP_URL` to the host's LAN address (for example `http://192.168.1.103:6565`),
-then run `npm run dev:lan`. Use that same address on every device, including the
-host, so origin checks pass. Allow TCP port 6565 through the firewall if needed.
+Set `APP_URL` to `http://<host-ip>:6565` and run `npm run dev:lan`. Use that
+address on every device, including the host.
 
-### Internet access
-
-Plain HTTP does not encrypt passwords or session cookies. For access beyond your
-local network, place the app behind an HTTPS reverse proxy and block direct access
-to its port.
+For access beyond your local network, put the app behind an HTTPS reverse proxy.
 
 ## Development
 
 | Command | Description |
 | --- | --- |
-| `npm run dev` | Start the dev server on port 3000 |
-| `npm run dev:lan` | Start the dev server on all interfaces, port 6565 |
-| `npm run typecheck` | Type-check the project |
-| `npm run test:auth` | Run authentication integration tests |
-| `npm run build` | Create a production build |
-| `npm run start` | Serve the production build |
-| `npm run db:push` | Sync the Prisma schema to the database |
-| `npm run db:studio` | Browse the database in Prisma Studio |
+| `npm run dev` | Dev server on port 3000 |
+| `npm run dev:lan` | Dev server on all interfaces, port 6565 |
+| `npm run typecheck` | Type-check |
+| `npm run test:auth` | Integration tests (isolated server and database) |
+| `npm run build` / `npm run start` | Production build / serve |
+| `npm run db:push` | Sync the schema to the database |
+| `npm run db:studio` | Browse the database |
 
-The project has no Prisma migration history; use `npm run db:push` to set up or
-update the schema. Back up your database before schema changes. After updating an
-existing install to a version with new tables (such as transaction history), run
-`npm run db:push` before starting the app; Docker does this automatically on start.
-
-Integration tests start an isolated server on port 3107 with a temporary SQLite
-database. They cover route and API protection, origin checks, login and logout,
-session expiry and rotation, account revocation, restart persistence, throttling,
-and spending with transaction history.
-
-### Project structure
-
-```
-prisma/schema.prisma        Data model
-scripts/manage-user.mjs     Account management CLI
-src/app/                    Pages, layout, and auth API routes
-src/app/_components/        Homepage UI, card dialog, category form
-src/server/api/routers/     tRPC routers for categories and gift cards
-src/server/auth/            Password hashing, sessions, origin checks
-src/styles/globals.css      Theme tokens
-tests/                      Integration tests
-```
+There are no Prisma migrations; use `npm run db:push` to create or update the
+schema, and back up the database first.
