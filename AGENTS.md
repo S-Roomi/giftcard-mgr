@@ -167,8 +167,7 @@ to hide stale generated files.
 
 Inspect the current files and git status before editing; preserve unrelated work.
 Keep changes focused and follow nearby code style. Treat source code as the
-authority when documentation or tests lag behind it: for example, older references
-to `/manage` remain, but that page is currently absent.
+authority when documentation or tests lag behind it.
 
 Update relevant documentation for behavior changes. Report what changed, which
 checks ran, and any unresolved failures without claiming unperformed verification.

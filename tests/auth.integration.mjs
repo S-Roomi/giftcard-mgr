@@ -65,7 +65,7 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
       headers: { Origin: requestOrigin, ...(cookie ? { Cookie: cookie } : {}) },
     })],
   });
-  async function login(value = password, cookie, next = "/manage", requestOrigin = origin) {
+  async function login(value = password, cookie, next = "/?category=1", requestOrigin = origin) {
     return request("/api/auth/login", {
       method: "POST", headers: { Origin: requestOrigin, ...(cookie ? { Cookie: cookie } : {}) },
       body: new URLSearchParams({ username: "owner", password: value, next }),
@@ -89,7 +89,7 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
     await start();
 
     await t.test("anonymous pages redirect and API requests fail, including forged cookies", async () => {
-      for (const path of ["/", "/manage", "/unknown-page"]) {
+      for (const path of ["/", "/unknown-page"]) {
         const response = await request(path);
         assert.equal(response.status, 307);
         assert.ok(response.headers.get("location")?.includes("/login"));
@@ -120,7 +120,7 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
     await t.test("login grants page and API access; tokens are hashed in SQLite", async () => {
       const response = await login();
       assert.equal(response.status, 303);
-      assert.equal(response.headers.get("location"), `${origin}/manage`);
+      assert.equal(response.headers.get("location"), `${origin}/?category=1`);
       cookie = cookieFrom(response);
       const session = await db.session.findFirstOrThrow();
       assert.equal(session.userId, user.id);
@@ -303,7 +303,7 @@ test("authentication protects pages, APIs, and persistent sessions", { timeout: 
     await t.test("expiry, rotation, password reset and account deletion revoke access", async () => {
       cookie = cookieFrom(await login());
       await db.session.updateMany({ data: { expiresAt: new Date(0) } });
-      assert.equal((await request("/manage", { headers: { Cookie: cookie } })).status, 307);
+      assert.equal((await request("/", { headers: { Cookie: cookie } })).status, 307);
       const oldCookie = cookieFrom(await login());
       cookie = cookieFrom(await login(password, oldCookie, "//attacker.example"));
       assert.equal((await request("/api/trpc/category.getAll", { headers: { Cookie: oldCookie } })).status, 401);
