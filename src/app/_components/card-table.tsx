@@ -130,13 +130,29 @@ function CardRow({
   const lastFour = codeLastFour(card.code);
   const busy = disabled || deleteCard.isPending;
 
-  const copy = async (text: string, what: string) => {
+  const [copied, setCopied] = useState<"code" | "pin" | null>(null);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
+
+  const copy = async (which: "code" | "pin") => {
+    const text = which === "code" ? card.code : card.pin;
+    const what = which === "code" ? "Code" : "PIN";
+    if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
       onAnnounce(`${what} copied`);
+      setCopied(which);
+      clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopied(null), 1500);
     } catch {
       onAnnounce(`Could not copy ${what.toLowerCase()}`);
     }
+  };
+
+  // Clicking the value copies it, unless the user just dragged to select part of it.
+  const copyOnClick = (which: "code" | "pin") => () => {
+    if (window.getSelection()?.toString()) return;
+    void copy(which);
   };
 
   return (
@@ -147,13 +163,46 @@ function CardRow({
         } ${dimmed ? "text-muted" : "text-foreground"}`}
       >
         <td className="px-5 py-3 align-top max-md:col-start-1 max-md:p-0">
-          <span className={`break-all font-mono text-[0.8125rem] ${dimmed ? "" : "text-bright"}`}>{card.code}</span>
+          <div className="flex items-center gap-1">
+            {/* Mouse and touch shortcut; keyboard and screen readers use the labeled button beside it. */}
+            <span
+              onClick={copyOnClick("code")}
+              title="Click to copy"
+              className={`-mx-1 min-w-0 cursor-copy break-all rounded px-1 font-mono text-[0.8125rem] hover:bg-raised ${dimmed ? "" : "text-bright"}`}
+            >
+              {card.code}
+            </span>
+            <IconButton
+              label={`Copy code for card ending ${lastFour}`}
+              onClick={() => void copy("code")}
+              done={copied === "code"}
+              icon={<CopyIcon />}
+            />
+          </div>
           {card.notes && <p className="mt-0.5 break-words text-xs text-muted">{card.notes}</p>}
         </td>
         <td data-label="PIN" className={`px-2 py-3 align-top font-mono max-md:col-start-1 max-md:p-0 ${cellLabel}`}>
           {card.pin ? (
-            <span className={showPin ? "" : "text-subtle"}>
-              {showPin ? card.pin : <span aria-label="PIN hidden">••••</span>}
+            <span className="inline-flex items-center gap-1">
+              <span
+                onClick={copyOnClick("pin")}
+                title="Click to copy"
+                className={`-mx-1 cursor-copy whitespace-nowrap rounded px-1 hover:bg-raised ${showPin ? "" : "text-subtle"}`}
+              >
+                {showPin ? card.pin : <span aria-label="PIN hidden">••••</span>}
+              </span>
+              <IconButton
+                label={`${showPin ? "Hide" : "Show"} PIN for card ending ${lastFour}`}
+                pressed={showPin}
+                onClick={() => setShowPin((value) => !value)}
+                icon={showPin ? <EyeOffIcon /> : <EyeIcon />}
+              />
+              <IconButton
+                label={`Copy PIN for card ending ${lastFour}`}
+                onClick={() => void copy("pin")}
+                done={copied === "pin"}
+                icon={<CopyIcon />}
+              />
             </span>
           ) : (
             <span className="font-sans text-muted" aria-label="No PIN">—</span>
@@ -183,15 +232,6 @@ function CardRow({
           <RowMenu label={`Actions for card ending ${lastFour}`}>
             {(close) => (
               <>
-                <MenuItem onClick={() => { close(); void copy(card.code, "Code"); }}>Copy code</MenuItem>
-                {card.pin && (
-                  <>
-                    <MenuItem onClick={() => { close(); setShowPin((value) => !value); }}>
-                      {showPin ? "Hide PIN" : "Show PIN"}
-                    </MenuItem>
-                    <MenuItem onClick={() => { close(); void copy(card.pin ?? "", "PIN"); }}>Copy PIN</MenuItem>
-                  </>
-                )}
                 <MenuItem disabled={busy} onClick={() => { close(); onEdit(); }}>Edit</MenuItem>
                 <MenuItem
                   danger
@@ -216,6 +256,81 @@ function CardRow({
         </tr>
       )}
     </>
+  );
+}
+
+/** A 44px icon-only button that shows a check mark briefly after it succeeds. */
+function IconButton({
+  label,
+  icon,
+  onClick,
+  done = false,
+  pressed,
+}: {
+  label: string;
+  icon: ReactNode;
+  onClick: () => void;
+  done?: boolean;
+  pressed?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={pressed}
+      title={label}
+      onClick={onClick}
+      className={`-my-3 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md hover:bg-edge hover:text-foreground max-md:-my-2 ${
+        done ? "text-accent" : "text-subtle"
+      }`}
+    >
+      {done ? <CheckIcon /> : icon}
+    </button>
+  );
+}
+
+const iconProps = {
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": true,
+  className: "h-4 w-4",
+} as const;
+
+function CopyIcon() {
+  return (
+    <svg {...iconProps}>
+      <rect x="9" y="9" width="12" height="12" rx="2" />
+      <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg {...iconProps} strokeWidth={2.4}>
+      <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="M3 3l18 18M10.6 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.1 3.9M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7c1.7 0 3.2-.5 4.5-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </svg>
   );
 }
 

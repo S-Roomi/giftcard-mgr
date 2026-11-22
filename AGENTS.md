@@ -91,6 +91,10 @@ to hide stale generated files.
 - Card rows highlight cards expiring within 30 days and dim empty or expired
   cards. Wide tables scroll in their own box. Row menus use the Popover API so
   the scroll box cannot clip them; they close on scroll and resize.
+- Codes and PINs copy without opening the row menu: each has a labeled copy
+  icon button, and clicking the value itself also copies it (skipped when the
+  user has selected part of it). The PIN stays masked behind an eye toggle.
+  The row menu holds Edit and Delete.
 - Sorting is local to each category. Its sort control is always visible above
   the card table. The selected order drives both the table and spending-plan
   allocation.

@@ -9,6 +9,7 @@ A self-hosted app for organizing gift cards and planning how to spend them.
   kept in the URL.
 - **Categories and cards** — track code, PIN, balance, expiry, and notes. Cards
   expiring within 30 days are highlighted, and the sidebar shows your total.
+  Copy a code or PIN in one click from the card table.
 - **Spending** — enter an order total to see which cards cover it and
   what each has left, then record the spend. All cards are charged together or
   not at all.
