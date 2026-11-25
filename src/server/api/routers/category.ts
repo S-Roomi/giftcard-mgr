@@ -98,7 +98,7 @@ export const categoryRouter = createTRPCRouter({
         const entries: { giftCardId: number; cardLabel: string; amount: number; balanceAfter: number }[] = [];
         for (const allocation of input.allocations) {
           const card = cardsById.get(allocation.cardId);
-          if (!card || card.categoryId !== input.categoryId) {
+          if (card?.categoryId !== input.categoryId) {
             throw new TRPCError({
               code: "BAD_REQUEST",
               message: "A selected card is no longer in this category. Refresh and try again.",
@@ -134,7 +134,7 @@ export const categoryRouter = createTRPCRouter({
           data: {
             categoryId: input.categoryId,
             amount: roundCents(entries.reduce((sum, entry) => sum + entry.amount, 0)),
-            note: input.note ? input.note : null,
+            note: input.note || null,
             userId,
             entries: { create: entries },
           },

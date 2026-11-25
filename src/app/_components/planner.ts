@@ -64,14 +64,14 @@ export function isExpiringSoon(card: GiftCard, now: Date): boolean {
   return remaining >= 0 && remaining <= EXPIRING_SOON_DAYS * 24 * 60 * 60 * 1000;
 }
 
-export type Allocation = { card: GiftCard; portion: number };
+export interface Allocation { card: GiftCard; portion: number }
 
-export type SpendPlan = {
+export interface SpendPlan {
   validAmount: boolean;
   selection: Allocation[];
   covered: number;
   shortfall: number;
-};
+}
 
 /**
  * Pick cards in the given order until `amount` is covered. `cards` should
